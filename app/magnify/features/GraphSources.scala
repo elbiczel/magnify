@@ -48,7 +48,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
     val classExtractor = new ClassExtractor()
     logger.info("Revision analysis starts: " + name + " : " + System.nanoTime())
     vArchive.extract { (archive, diff) =>
-      logger.info("processing commit @ " + name + " : " + diff.revision + " : " + System.nanoTime())
+      logger.debug("processing commit @ " + name + " : " + diff.revision + " : " + System.nanoTime())
       classExtractor.newCommit(diff)
       val classes = classesFrom(archive, classExtractor)
       processRevision(graph, diff, classes)
@@ -63,7 +63,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
     addPackageImports(graph)
     logger.info("Add package Imports finished: " + name + " : " + System.nanoTime())
     logger.info("Compute LOC starts: " + name + " : " + System.nanoTime())
-    computeLinesOfCode(graph)
+    computeLinesOfCode(graph, vArchive)
     logger.info("Compute LOC finished: " + name + " : " + System.nanoTime())
     graphs += name -> graph
   }
@@ -72,12 +72,12 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
     importedGraphs += name -> graph
   }
 
-  private def classesFrom(file: Archive, classExtractor: ClassExtractor): Seq[ParsedFile] = file.extract {
-    (fileName, content) =>
+  private def classesFrom(file: Archive, classExtractor: ClassExtractor): Seq[ParsedFile] =
+    file.extract { (fileName, oFileId, content) =>
       if (isJavaFile(fileName) && classExtractor.shouldParse(fileName)) {
-        val stringContent = inputStreamToString(content)
+        val stringContent = inputStreamToString(content())
         val parsedFiles = for (ast <- parse(new ByteArrayInputStream(stringContent.getBytes("UTF-8")))) yield (
-            ParsedFile(ast, stringContent, fileName))
+            ParsedFile(ast, stringContent, fileName, oFileId))
         classExtractor.parsedFile(fileName, parsedFiles)
         parsedFiles
       } else {
@@ -117,7 +117,13 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
       val (cls, commitEdge) = graph.addVertex(
         "class", parsedFile.ast.className, Seq("file-name" -> parsedFile.fileName).toMap)
       commitEdge.map(changeDescription.setProperties(_))
-      cls.setProperty("source-code", parsedFile.content)
+      if (parsedFile.oFileId.isDefined) {
+        cls.setProperty("object-id", parsedFile.oFileId.get)
+      } else {
+        cls.setProperty("source-code", parsedFile.content)
+      }
+      val linesOfCode = parsedFile.content.count(_ == '\n')
+      cls.setProperty("metric--lines-of-code", linesOfCode)
       cls
   }
 
@@ -221,15 +227,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
   override def getJson(name: String) =
     importedGraphs.get(name)
 
-  private def computeLinesOfCode(graph: Graph) {
-    graph
-      .vertices
-      .has("kind", "class")
-      .toList foreach {
-      case v: Vertex =>
-        val linesOfCode = v.getProperty("source-code").toString.count(_ == '\n')
-        v.setProperty("metric--lines-of-code", linesOfCode)
-    }
+  private def computeLinesOfCode(graph: Graph, vArchive: VersionedArchive) {
     graph
       .vertices
       .has("kind", "package").toList foreach { case pkg: Vertex =>
@@ -268,4 +266,4 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
   }
 }
 
-private case class ParsedFile(ast: Ast, content: String, fileName: String)
+private case class ParsedFile(ast: Ast, content: String, fileName: String, oFileId: Option[String])
