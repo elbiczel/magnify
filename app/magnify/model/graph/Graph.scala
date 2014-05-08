@@ -9,7 +9,7 @@ import com.tinkerpop.blueprints.impls.tg.TinkerGraph
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import com.tinkerpop.pipes.PipeFunction
 import com.tinkerpop.pipes.branch.LoopPipe.LoopBundle
-import magnify.model.ChangeDescription
+import magnify.model.{ChangeDescription, VersionedArchive}
 
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
@@ -26,6 +26,14 @@ final class Graph (val blueprintsGraph: BlueprintsGraph) {
 
   private var headVertex: Vertex = _
   private var parentRevVertex: Option[Vertex] = None
+
+  def getSource(v: Vertex, vArchive: VersionedArchive): String = {
+    if (v.getPropertyKeys.contains("source-code")) {
+      v.getProperty("source-code")
+    } else {
+      vArchive.getContent(v.getProperty("object-id"))
+    }
+  }
 
   private def revVertex(rev: Option[String]): Vertex = {
     rev.flatMap { (revId) =>

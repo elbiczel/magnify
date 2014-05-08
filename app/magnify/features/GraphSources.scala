@@ -22,7 +22,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
 
   private val logger = Logger(classOf[GraphSources].getSimpleName)
 
-  private val graphs = mutable.Map[String, Graph]()
+  private val graphs = mutable.Map[String, (Graph, VersionedArchive)]()
   private val importedGraphs = mutable.Map[String, Json]()
 
   class ClassExtractor {
@@ -65,7 +65,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
     logger.info("Compute LOC starts: " + name + " : " + System.nanoTime())
     computeLinesOfCode(graph, vArchive)
     logger.info("Compute LOC finished: " + name + " : " + System.nanoTime())
-    graphs += name -> graph
+    graphs += name -> (graph, vArchive)
   }
 
   override def add(name: String, graph: Json) {
@@ -222,7 +222,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
     graphs.keys.toSeq ++ importedGraphs.keys.toSeq
 
   override def get(name: String): Option[Graph] =
-    graphs.get(name)
+    graphs.get(name).map(_._1)
 
   override def getJson(name: String) =
     importedGraphs.get(name)
