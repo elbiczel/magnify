@@ -17,18 +17,18 @@ private[services] final class ClassAndImportsParser extends Parser {
 
   val logger = Logger(classOf[ClassAndImportsParser].getSimpleName)
 
-  override def apply(input: InputStream): Seq[Ast] =
-    parse(input).map(AstBuilder(_)).getOrElse(Seq())
+  override def apply(fileName: String, input: InputStream): Seq[Ast] =
+    parse(fileName, input).map(AstBuilder(_)).getOrElse(Seq())
 
-  private def parse(input: InputStream): Option[CompilationUnit] =
+  private def parse(fileName: String, input: InputStream): Option[CompilationUnit] =
     try {
       Some(JavaParser.parse(new NonClosingInputStream(input)))
     } catch {
       case e: Exception =>
-        logger.warn("Could not parse Java file.", e)
+        logger.warn("Could not parse Java file: " + fileName, e)
         None
       case e: TokenMgrError =>
-        logger.warn("Lexical error", e)
+        logger.warn("Lexical error in: " + fileName, e)
         None
     }
 }

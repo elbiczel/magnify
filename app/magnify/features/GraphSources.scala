@@ -48,11 +48,14 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
     val classExtractor = new ClassExtractor()
     logger.info("Revision analysis starts: " + name + " : " + System.nanoTime())
     vArchive.extract { (archive, diff) =>
-      logger.debug("processing commit @ " + name + " : " + diff.revision + " : " + System.nanoTime())
       classExtractor.newCommit(diff)
+      val start = System.nanoTime()
       val classes = classesFrom(archive, classExtractor)
-      processRevision(graph, diff, classes)
+      val parseTime = System.nanoTime() - start
+      val (clsTime, importTime, packageTime) = processRevision(graph, diff, classes)
       graph.commitVersion(diff, classExtractor.classes)
+      System.err.print("%s,%s,%s,%s,%s,%s,%s\n".format(
+        diff.revision, diff.changedFiles.size, diff.removedFiles.size, parseTime, clsTime, importTime, packageTime))
       Seq() // for monoid to work
     }
     logger.info("Revision analysis finished: " + name + " : " + System.nanoTime())
@@ -72,12 +75,14 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
     importedGraphs += name -> graph
   }
 
+  // TODO: Skip tests
   private def classesFrom(file: Archive, classExtractor: ClassExtractor): Seq[ParsedFile] =
     file.extract { (fileName, oFileId, content) =>
       if (isJavaFile(fileName) && classExtractor.shouldParse(fileName)) {
         val stringContent = inputStreamToString(content())
-        val parsedFiles = for (ast <- parse(new ByteArrayInputStream(stringContent.getBytes("UTF-8")))) yield (
-            ParsedFile(ast, stringContent, fileName, oFileId))
+        val parsedFiles = for (
+          ast <- parse(fileName, new ByteArrayInputStream(stringContent.getBytes("UTF-8")))
+        ) yield (ParsedFile(ast, stringContent, fileName, oFileId))
         classExtractor.parsedFile(fileName, parsedFiles)
         parsedFiles
       } else {
@@ -106,10 +111,17 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
   private def processRevision(
       graph: Graph,
       changeDescription: ChangeDescription,
-      classes: Iterable[ParsedFile]) {
+      classes: Iterable[ParsedFile]): (Long, Long, Long) = {
+    val clsStart = System.nanoTime()
     val clsVertices = classes.map(addClasses(graph, changeDescription))
+    val clsTime = System.nanoTime() - clsStart
+    val importsStart = System.nanoTime()
     addImports(graph, classes.map(_.ast))
+    val importsTime = System.nanoTime() - importsStart
+    val packageStart = System.nanoTime()
     addPackages(graph, changeDescription, clsVertices)
+    val packageTime = System.nanoTime() - packageStart
+    (clsTime, importsTime, packageTime)
   }
 
   private def addClasses(graph: Graph, changeDescription: ChangeDescription): (ParsedFile => Vertex) = {
