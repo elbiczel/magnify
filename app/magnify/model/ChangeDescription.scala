@@ -1,7 +1,7 @@
 package magnify.model
 
 import com.tinkerpop.blueprints.{Edge, Element, Vertex}
-import magnify.model.graph.Graph
+import magnify.model.graph.FullGraph
 
 final case class ChangeDescription(
     revision: String,

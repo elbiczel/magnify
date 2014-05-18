@@ -9,10 +9,10 @@ import com.tinkerpop.pipes.filter.OrFilterPipe
 /**
  * @author Cezary Bartoszuk (cezary@codilime.com)
  */
-final class CustomGraphView (graph: Graph, revision: Option[String]) extends GraphView {
+final class CustomGraphView (graph: Graph) extends GraphView {
 
   override def vertices: Iterable[Vertex] =
-    graph.revVertices(revision)
+    graph.vertices
         .add(packages)
         .toList
 
@@ -20,7 +20,7 @@ final class CustomGraphView (graph: Graph, revision: Option[String]) extends Gra
     new PropertyFilterPipe[Vertex, String]("kind", "package", Filter.EQUAL)
 
   override def edges: Iterable[Edge] =
-    graph.edges(revision)
+    graph.edges
         .add(imports)
         .toList
 
@@ -29,4 +29,11 @@ final class CustomGraphView (graph: Graph, revision: Option[String]) extends Gra
       new LabelFilterPipe("package-imports", Filter.EQUAL),
       new LabelFilterPipe("in-package", Filter.EQUAL),
       new LabelFilterPipe("calls", Filter.EQUAL))
+}
+
+object CustomGraphView {
+
+  def apply(graph: FullGraph, revision: Option[String]): CustomGraphView = {
+    new CustomGraphView(graph.forRevision(revision))
+  }
 }

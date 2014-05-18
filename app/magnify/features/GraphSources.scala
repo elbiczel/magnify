@@ -13,7 +13,7 @@ import com.tinkerpop.blueprints.oupls.jung.GraphJung
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import edu.uci.ics.jung.algorithms.scoring.PageRank
 import magnify.model._
-import magnify.model.graph.Graph
+import magnify.model.graph.FullGraph
 import play.api.Logger
 
 /**
@@ -25,7 +25,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
   private val logger = Logger(classOf[GraphSources].getSimpleName)
   private val graphsDir = "graphs/"
 
-  private val graphs = mutable.Map[String, (Graph, VersionedArchive)]()
+  private val graphs = mutable.Map[String, (FullGraph, VersionedArchive)]()
   private val importedGraphs = mutable.Map[String, Json]()
 
   Future {
@@ -35,8 +35,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
     val projects = filesSet.map(_.split("\\.").head).filter(_.trim.nonEmpty)
     projects.foreach { (project) =>
       logger.info("Loading: " + project)
-      val graph = Graph.load(graphsDir + project + ".gml")
-
+      val graph = FullGraph.load(graphsDir + project + ".gml", pool)
       val archive = VersionedArchive.load(graphsDir + project + ".archive")
       graphs += project -> (graph, archive)
     }
@@ -52,7 +51,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
     var changedFiles = Set[String]()
 
     def newCommit(diff: ChangeDescription): Unit = {
-      currentClasses = currentClasses.filterKeys((fileName) => !diff.removedFiles.contains(diff))
+      currentClasses = currentClasses.filterKeys((fileName) => !diff.removedFiles.contains(fileName))
       changedFiles = diff.changedFiles
     }
 
@@ -66,7 +65,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
   }
 
   override def add(name: String, vArchive: VersionedArchive) {
-    val graph = Graph.tinker
+    val graph = FullGraph.tinker
     val classExtractor = new ClassExtractor()
     logger.info("Revision analysis starts: " + name + " : " + System.nanoTime())
     vArchive.extract { (archive, diff) =>
@@ -74,7 +73,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
       val start = System.nanoTime()
       val classes = classesFrom(archive, classExtractor)
       val parseTime = System.nanoTime() - start
-      val (clsTime, importTime, packageTime) = processRevision(graph, diff, classes)
+      val (clsTime, importTime, packageTime) = processRevision(graph, diff, classes, classExtractor.classes)
       graph.commitVersion(diff, classExtractor.classes)
       System.err.print("%s,%s,%s,%s,%s,%s,%s\n".format(
         diff.revision, diff.changedFiles.size, diff.removedFiles.size, parseTime, clsTime, importTime, packageTime))
@@ -91,6 +90,8 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
     computeLinesOfCode(graph, vArchive)
     logger.info("Compute LOC finished: " + name + " : " + System.nanoTime())
     Future {
+      // generate head graph
+      graph.forRevision()
       graph.save(graphsDir + name + ".gml")
       vArchive.save(graphsDir + name + ".archive")
     }.recover {
@@ -144,14 +145,15 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
     name.endsWith(".java") && !name.endsWith("Test.java")
 
   private def processRevision(
-      graph: Graph,
+      graph: FullGraph,
       changeDescription: ChangeDescription,
-      classes: Iterable[ParsedFile]): (Long, Long, Long) = {
+      classes: Iterable[ParsedFile],
+      allClasses: Set[String]): (Long, Long, Long) = {
     val clsStart = System.nanoTime()
     val clsVertices = classes.map(addClasses(graph, changeDescription))
     val clsTime = System.nanoTime() - clsStart
     val importsStart = System.nanoTime()
-    addImports(graph, classes.map(_.ast))
+    addImports(graph, classes.map(_.ast), allClasses)
     val importsTime = System.nanoTime() - importsStart
     val packageStart = System.nanoTime()
     addPackages(graph, changeDescription, clsVertices)
@@ -159,10 +161,10 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
     (clsTime, importsTime, packageTime)
   }
 
-  private def addClasses(graph: Graph, changeDescription: ChangeDescription): (ParsedFile => Vertex) = {
+  private def addClasses(graph: FullGraph, changeDescription: ChangeDescription): (ParsedFile => Vertex) = {
     parsedFile =>
       val (cls, commitEdge) = graph.addVertex(
-        "class", parsedFile.ast.className, Seq("file-name" -> parsedFile.fileName).toMap)
+        "class", parsedFile.ast.className, Map("file-name" -> parsedFile.fileName))
       commitEdge.map(changeDescription.setProperties(_))
       if (parsedFile.oFileId.isDefined) {
         cls.setProperty("object-id", parsedFile.oFileId.get)
@@ -174,9 +176,9 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
       cls
   }
 
-  private def addImports(graph: Graph, classes: Iterable[Ast]) {
+  private def addImports(graph: FullGraph, classes: Iterable[Ast], allClasses: Set[String]) {
     for {
-      (outCls, imported) <- imports.resolve(classes)
+      (outCls, imported) <- imports.resolve(classes, allClasses: Set[String])
       inCls <- imported
     } for {
       inVertex <- classesNamed(graph, inCls)
@@ -186,7 +188,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
     }
   }
 
-  private def addPackages(graph: Graph, changeDescription: ChangeDescription, classes: Iterable[Vertex]) {
+  private def addPackages(graph: FullGraph, changeDescription: ChangeDescription, classes: Iterable[Vertex]) {
     val packageNames = packagesFrom(classes)
     val packageByName = addPackageVertices(graph, changeDescription, packageNames)
     addPackageEdges(graph, packageByName)
@@ -201,28 +203,28 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
     } yield pkgName).toSet
 
   private def addPackageVertices(
-      graph: Graph, changeDescription: ChangeDescription, packageNames: Set[String]): Map[String, Vertex] =
+      graph: FullGraph, changeDescription: ChangeDescription, packageNames: Set[String]): Map[String, Vertex] =
     (for (pkgName <- packageNames) yield {
       val (pkg, commitEdge) = graph.addVertex("package", pkgName)
       commitEdge.map(changeDescription.setProperties(_))
       pkgName -> pkg
     }).toMap
 
-  private def addPackageEdges(graph: Graph, packageByName: Map[String, Vertex]) {
+  private def addPackageEdges(graph: FullGraph, packageByName: Map[String, Vertex]) {
     for ((name, pkg) <- packageByName; if name.nonEmpty) {
       val outer = packageByName(parentPkgName(name))
       graph.addEdge(pkg, "in-package", outer)
     }
   }
 
-  private def addClassPackageEdges(graph: Graph, classes: Iterable[Vertex], packageByName: Map[String, Vertex]) {
+  private def addClassPackageEdges(graph: FullGraph, classes: Iterable[Vertex], packageByName: Map[String, Vertex]) {
     for (cls <- classes) {
       val pkg = packageByName(parentPkgName(name(cls)))
       graph.addEdge(cls, "in-package", pkg)
     }
   }
 
-  private def addPackageImports(graph: Graph) {
+  private def addPackageImports(graph: FullGraph) {
     for {
       pkg <- graph.vertices
           .has("kind", "class")
@@ -239,7 +241,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
     }
   }
 
-  private def addPageRank(graph: Graph) {
+  private def addPageRank(graph: FullGraph) {
     val pageRank = new PageRank[Vertex, Edge](new GraphJung(graph.blueprintsGraph), 0.15)
     pageRank.evaluate()
     for (vertex <- graph.blueprintsGraph.getVertices) {
@@ -257,7 +259,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
   private def name(cls: Vertex): String =
     cls.getProperty("name").toString
 
-  private def classesNamed(graph: Graph, name: String): Iterable[Vertex] =
+  private def classesNamed(graph: FullGraph, name: String): Iterable[Vertex] =
     graph
       .currentVertices
       .has("kind", "class")
@@ -268,13 +270,13 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
   override def list: Seq[String] =
     graphs.keys.toSeq ++ importedGraphs.keys.toSeq
 
-  override def get(name: String): Option[Graph] =
+  override def get(name: String): Option[FullGraph] =
     graphs.get(name).map(_._1)
 
   override def getJson(name: String) =
     importedGraphs.get(name)
 
-  private def computeLinesOfCode(graph: Graph, vArchive: VersionedArchive) {
+  private def computeLinesOfCode(graph: FullGraph, vArchive: VersionedArchive) {
     graph
       .vertices
       .has("kind", "package").toList foreach { case pkg: Vertex =>
@@ -303,8 +305,8 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
       val calls = runtime.groupBy {case (a, b, _) => (a, b)}.mapValues(s => s.map(_._3).sum)
       for {
         ((fromPackage, toPackage), count) <- calls
-        from <- graph.revVertices().has("kind", "package").has("name", fromPackage).toList
-        to <- graph.revVertices().has("kind", "package").has("name", toPackage).toList
+        from <- graph.forRevision().vertices.has("kind", "package").has("name", fromPackage).toList
+        to <- graph.forRevision().vertices.has("kind", "package").has("name", toPackage).toList
       } {
         val e = graph.addEdge(from.asInstanceOf[Vertex], "calls", to.asInstanceOf[Vertex])
         e.setProperty("count", count.toString)

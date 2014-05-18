@@ -16,8 +16,7 @@ private[services] final class ProjectImports extends Imports {
    *
    * Does not resolve implicit "same package imports", asterisk imports and static imports.
    */
-  override def resolve(classes: Iterable[Ast]): Map[String, Seq[String]] = {
-    val classNames = classes.map(_.className).toSet
+  override def resolve(classes: Iterable[Ast], allClasses: Set[String]): Map[String, Seq[String]] = {
     val imports = for {
       Ast(name, imports, asteriskPackages, unresolvedClasses) <- classes
     } yield {
@@ -25,9 +24,9 @@ private[services] final class ProjectImports extends Imports {
         packageName <- asteriskPackages;
         className <- unresolvedClasses
       ) yield (packageName + "." + className)
-      val implicitImports = (possibleImports ++ unresolvedClasses).filter(classNames)
+      val implicitImports = (possibleImports ++ unresolvedClasses).filter(allClasses)
       logger.debug("implicitImports in " + name + " : " + implicitImports.mkString(", "))
-      (name, (imports.filter(classNames) ++ implicitImports).toSeq)
+      (name, (imports.filter(allClasses) ++ implicitImports).toSeq)
     }
     imports.toMap
   }

@@ -3,7 +3,7 @@ package magnify.features
 import java.io.File
 
 import magnify.model._
-import magnify.model.graph.Graph
+import magnify.model.graph.FullGraph
 
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
@@ -18,7 +18,7 @@ trait Sources {
 
   def list: Seq[String]
 
-  def get(name: String): Option[Graph]
+  def get(name: String): Option[FullGraph]
 
   def getJson(name: String): Option[Json]
 

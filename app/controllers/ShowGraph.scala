@@ -35,25 +35,25 @@ sealed class ShowGraph (protected override val sources: Sources) extends Control
 
   def showCustomJson(name: String) = Action { implicit request =>
     withGraph(name) { graph =>
-      Ok(json(new CustomGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
+      Ok(json(CustomGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
     }
   }
 
   def showPackagesJson(name: String) = Action { implicit request =>
     withGraph(name) { graph =>
-      Ok(json(new PackagesGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
+      Ok(json(PackagesGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
     }
   }
 
   def showPkgImportsJson(name: String) = Action { implicit request =>
     withGraph(name) { graph =>
-      Ok(json(new PackageImportsGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
+      Ok(json(PackageImportsGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
     }
   }
 
   def showClsImportsJson(name: String) = Action { implicit request =>
     withGraph(name) { graph =>
-      Ok(json(new ClassImportsGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
+      Ok(json(ClassImportsGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
     }
   }
 
@@ -69,7 +69,7 @@ sealed class ShowGraph (protected override val sources: Sources) extends Control
     }
   }
 
-  private def withGraph(name: String)(action: Graph => Result)(implicit request: Request[AnyContent]): Result =
+  private def withGraph(name: String)(action: FullGraph => Result)(implicit request: Request[AnyContent]): Result =
     sources.get(name) match {
       case Some(graph) => action(graph)
       case None =>

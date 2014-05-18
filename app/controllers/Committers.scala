@@ -1,10 +1,10 @@
 package controllers
 
 
-import magnify.model.graph.Graph
+import magnify.model.graph.FullGraph
 
 object Committers {
-  def apply(revision: Option[String], graph: Graph): Set[Map[String, String]] = {
+  def apply(revision: Option[String], graph: FullGraph): Set[Map[String, String]] = {
     val commits = graph.commitsOlderThan(revision)
     commits.map((vrtx) => {
       val authorWithTime = vrtx.getProperty[String]("author")

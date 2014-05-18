@@ -10,5 +10,5 @@ trait Imports {
    * Resolves imports from given `Ast` `Seq` yielding a who imports who `Map` containing classes
    * FQNs.
    */
-  def resolve(classes: Iterable[Ast]): Map[String, Seq[String]]
+  def resolve(classes: Iterable[Ast], allClasses: Set[String]): Map[String, Seq[String]]
 }
