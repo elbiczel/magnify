@@ -5,6 +5,7 @@ import java.io.{BufferedInputStream, BufferedOutputStream, FileInputStream, File
 
 import scala.collection.mutable
 import scala.collection.JavaConversions._
+import scala.concurrent.{ExecutionContext, Future}
 
 import com.tinkerpop.blueprints.{Graph => BlueprintsGraph, _}
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph
@@ -13,7 +14,6 @@ import com.tinkerpop.gremlin.java.GremlinPipeline
 import com.tinkerpop.pipes.PipeFunction
 import com.tinkerpop.pipes.branch.LoopPipe.LoopBundle
 import magnify.model.{ChangeDescription, VersionedArchive}
-import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
@@ -40,9 +40,10 @@ object FullGraph {
   }
 
   private object HeadVertexFilter extends PipeFunction[Vertex, lang.Boolean] {
-    override def compute(commit: Vertex): lang.Boolean = if (commit.getProperty("kind") != "commit") { false } else {
-      !commit.getEdges(Direction.OUT, "commit").iterator().hasNext
-    }
+    override def compute(commit: Vertex): lang.Boolean =
+      if (commit.getProperty[String]("kind") != "commit") { false } else {
+        !commit.getEdges(Direction.OUT, "commit").iterator().hasNext
+      }
   }
 }
 
@@ -150,16 +151,6 @@ final class FullGraph(val blueprintsGraph: BlueprintsGraph) extends Graph {
     parentRevVertex = Some(revVertex)
   }
 
-  private case class HasInFilter[T <: Element](property: String, values: Set[String])
-      extends PipeFunction[T, lang.Boolean] {
-    override def compute(element: T): lang.Boolean = values.contains(element.getProperty(property))
-  }
-
-  private case class NotFilter[T <: Element](filter: PipeFunction[T, lang.Boolean])
-      extends PipeFunction[T, lang.Boolean] {
-    override def compute(argument: T): lang.Boolean = !filter.compute(argument)
-  }
-
   private object TrueFilter extends PipeFunction[LoopBundle[Vertex], lang.Boolean] {
     override def compute(argument: LoopBundle[Vertex]): lang.Boolean = true
   }
@@ -171,7 +162,26 @@ final class FullGraph(val blueprintsGraph: BlueprintsGraph) extends Graph {
     }
   }
 
-  private class AsVertex[T <: Element] extends PipeFunction[T, Vertex] {
-    override def compute(argument: T): Vertex = argument.asInstanceOf[Vertex]
+  def currentRevisionFilter: PipeFunction[Vertex, lang.Boolean] = new PipeFunction[Vertex, lang.Boolean] {
+    override def compute(v: Vertex): lang.Boolean = parentRevVertex match {
+      case None => true
+      case Some(revV) => {
+        v.getVertices(Direction.OUT, "in-revision").toSet.contains(revV)
+      }
+    }
   }
+}
+
+class AsVertex[T <: Element] extends PipeFunction[T, Vertex] {
+  override def compute(argument: T): Vertex = argument.asInstanceOf[Vertex]
+}
+
+case class HasInFilter[T <: Element](property: String, values: Set[String])
+    extends PipeFunction[T, lang.Boolean] {
+  override def compute(element: T): lang.Boolean = values.contains(element.getProperty(property))
+}
+
+case class NotFilter[T <: Element](filter: PipeFunction[T, lang.Boolean])
+    extends PipeFunction[T, lang.Boolean] {
+  override def compute(argument: T): lang.Boolean = !filter.compute(argument)
 }

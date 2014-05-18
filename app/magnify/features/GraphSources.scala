@@ -8,12 +8,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.matching.Regex
 
-import com.tinkerpop.blueprints.{Edge, Vertex}
-import com.tinkerpop.blueprints.oupls.jung.GraphJung
+import com.tinkerpop.blueprints.{Direction, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
-import edu.uci.ics.jung.algorithms.scoring.PageRank
 import magnify.model._
-import magnify.model.graph.FullGraph
+import magnify.model.graph.{FullGraph, HasInFilter, NotFilter}
 import play.api.Logger
 
 /**
@@ -70,25 +68,12 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
     logger.info("Revision analysis starts: " + name + " : " + System.nanoTime())
     vArchive.extract { (archive, diff) =>
       classExtractor.newCommit(diff)
-      val start = System.nanoTime()
       val classes = classesFrom(archive, classExtractor)
-      val parseTime = System.nanoTime() - start
-      val (clsTime, importTime, packageTime) = processRevision(graph, diff, classes, classExtractor.classes)
+      processRevision(graph, diff, classes, classExtractor.classes)
       graph.commitVersion(diff, classExtractor.classes)
-      System.err.print("%s,%s,%s,%s,%s,%s,%s\n".format(
-        diff.revision, diff.changedFiles.size, diff.removedFiles.size, parseTime, clsTime, importTime, packageTime))
       Seq() // for monoid to work
     }
     logger.info("Revision analysis finished: " + name + " : " + System.nanoTime())
-    logger.info("PageRank starts: " + name + " : " + System.nanoTime())
-    // addPageRank(graph) // TODO(biczel): Make it work on single revision layer.
-    logger.info("PageRank finished: " + name + " : " + System.nanoTime())
-    logger.info("Add package Imports starts: " + name + " : " + System.nanoTime())
-    addPackageImports(graph)
-    logger.info("Add package Imports finished: " + name + " : " + System.nanoTime())
-    logger.info("Compute LOC starts: " + name + " : " + System.nanoTime())
-    computeLinesOfCode(graph, vArchive)
-    logger.info("Compute LOC finished: " + name + " : " + System.nanoTime())
     Future {
       // generate head graph
       graph.forRevision()
@@ -123,7 +108,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
 
   private def isTestFile(fileName: String): Boolean = {
     fileName.contains("/test/") || fileName.startsWith("test/") || fileName.contains("/tests/") ||
-        fileName.startsWith("tests/")
+        fileName.startsWith("tests/") || fileName.endsWith("Test.java")
   }
 
   private def inputStreamToString(is: InputStream) = {
@@ -142,23 +127,29 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
   }
 
   private def isJavaFile(name: String): Boolean =
-    name.endsWith(".java") && !name.endsWith("Test.java")
+    name.endsWith(".java")
 
   private def processRevision(
       graph: FullGraph,
       changeDescription: ChangeDescription,
       classes: Iterable[ParsedFile],
-      allClasses: Set[String]): (Long, Long, Long) = {
-    val clsStart = System.nanoTime()
-    val clsVertices = classes.map(addClasses(graph, changeDescription))
-    val clsTime = System.nanoTime() - clsStart
-    val importsStart = System.nanoTime()
-    addImports(graph, classes.map(_.ast), allClasses)
-    val importsTime = System.nanoTime() - importsStart
-    val packageStart = System.nanoTime()
-    addPackages(graph, changeDescription, clsVertices)
-    val packageTime = System.nanoTime() - packageStart
-    (clsTime, importsTime, packageTime)
+      allClasses: Set[String]): Unit = {
+    val changedClassNames = classes.map(_.ast.className).toSet
+    val classesImportingChanged = classesImporting(graph, changedClassNames, allClasses)
+    val newClassesByOldName = classesImportingChanged.map { (v) =>
+      val allImported = v.getVertices(Direction.OUT, "imports").toSeq
+      val allImportedNames = allImported.map(_.getProperty[String]("name"))
+      val changedImported = allImportedNames.filter(changedClassNames)
+      (v -> changedImported)
+    }.toMap
+    val newVertex = classes.map(addClasses(graph, changeDescription))
+    val newClassesByName = newVertex.map((v) => (v.getProperty[String]("name") -> v)).toMap
+    addImportsFromNewClasses(graph, classes.map(_.ast), allClasses)
+    newClassesByOldName.foreach { case (v, names) =>
+      names.foreach { (clsName) =>
+        graph.addEdge(v, "imports", newClassesByName(clsName))
+      }
+    }
   }
 
   private def addClasses(graph: FullGraph, changeDescription: ChangeDescription): (ParsedFile => Vertex) = {
@@ -176,7 +167,20 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
       cls
   }
 
-  private def addImports(graph: FullGraph, classes: Iterable[Ast], allClasses: Set[String]) {
+  private def classesImporting(graph: FullGraph, changedClasses: Set[String], allClasses: Set[String]): Set[Vertex] = {
+    val hasInFilter = HasInFilter[Vertex]("name", changedClasses)
+    graph.currentVertices
+        .filter(hasInFilter)
+        .has("kind", "class")
+        .in("imports")
+        .filter(HasInFilter("name", allClasses))
+        .filter(NotFilter(hasInFilter))
+        .filter(graph.currentRevisionFilter)
+        .dedup()
+        .toList.toSet
+  }
+
+  private def addImportsFromNewClasses(graph: FullGraph, classes: Iterable[Ast], allClasses: Set[String]) {
     for {
       (outCls, imported) <- imports.resolve(classes, allClasses: Set[String])
       inCls <- imported
@@ -187,77 +191,6 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
       graph.addEdge(outVertex, "imports", inVertex)
     }
   }
-
-  private def addPackages(graph: FullGraph, changeDescription: ChangeDescription, classes: Iterable[Vertex]) {
-    val packageNames = packagesFrom(classes)
-    val packageByName = addPackageVertices(graph, changeDescription, packageNames)
-    addPackageEdges(graph, packageByName)
-    addClassPackageEdges(graph, classes, packageByName)
-  }
-
-  private def packagesFrom(classes: Iterable[Vertex]): Set[String] =
-    (for {
-      cls <- classes
-      clsName = name(cls)
-      pkgName <- clsName.split('.').inits.toList.tail.map(_.mkString("."))
-    } yield pkgName).toSet
-
-  private def addPackageVertices(
-      graph: FullGraph, changeDescription: ChangeDescription, packageNames: Set[String]): Map[String, Vertex] =
-    (for (pkgName <- packageNames) yield {
-      val (pkg, commitEdge) = graph.addVertex("package", pkgName)
-      commitEdge.map(changeDescription.setProperties(_))
-      pkgName -> pkg
-    }).toMap
-
-  private def addPackageEdges(graph: FullGraph, packageByName: Map[String, Vertex]) {
-    for ((name, pkg) <- packageByName; if name.nonEmpty) {
-      val outer = packageByName(parentPkgName(name))
-      graph.addEdge(pkg, "in-package", outer)
-    }
-  }
-
-  private def addClassPackageEdges(graph: FullGraph, classes: Iterable[Vertex], packageByName: Map[String, Vertex]) {
-    for (cls <- classes) {
-      val pkg = packageByName(parentPkgName(name(cls)))
-      graph.addEdge(cls, "in-package", pkg)
-    }
-  }
-
-  private def addPackageImports(graph: FullGraph) {
-    for {
-      pkg <- graph.vertices
-          .has("kind", "class")
-          .out("in-package")
-          .toList.toSet[Vertex]
-      importsPkg <- new GremlinPipeline()
-          .start(pkg)
-          .in("in-package")
-          .out("imports")
-          .out("in-package")
-          .toList.toSet[Vertex]
-    } {
-      graph.addEdge(pkg, "package-imports", importsPkg)
-    }
-  }
-
-  private def addPageRank(graph: FullGraph) {
-    val pageRank = new PageRank[Vertex, Edge](new GraphJung(graph.blueprintsGraph), 0.15)
-    pageRank.evaluate()
-    for (vertex <- graph.blueprintsGraph.getVertices) {
-      vertex.setProperty("page-rank", pageRank.getVertexScore(vertex).toString)
-    }
-  }
-
-  private def parentPkgName(name: String): String =
-    if (name.contains('.')) {
-      name.substring(0, name.lastIndexOf('.'))
-    } else {
-      ""
-    }
-
-  private def name(cls: Vertex): String =
-    cls.getProperty("name").toString
 
   private def classesNamed(graph: FullGraph, name: String): Iterable[Vertex] =
     graph
@@ -275,21 +208,6 @@ private[features] final class GraphSources (parse: Parser, imports: Imports, imp
 
   override def getJson(name: String) =
     importedGraphs.get(name)
-
-  private def computeLinesOfCode(graph: FullGraph, vArchive: VersionedArchive) {
-    graph
-      .vertices
-      .has("kind", "package").toList foreach { case pkg: Vertex =>
-      val elems = new GremlinPipeline()
-        .start(pkg)
-        .in("in-package")
-        .has("kind", "class")
-        .property("metric--lines-of-code")
-        .toList.toSeq.asInstanceOf[mutable.Seq[Double]]
-      val avg = Option(elems).filter(_.size > 0).map(_.sum / elems.size.toDouble)
-      pkg.setProperty("metric--lines-of-code", avg.getOrElse(0.0))
-    }
-  }
 
   private object CsvCall extends Regex("""([^;]+);([^;]+);(\d+)""", "from", "to", "count")
 
