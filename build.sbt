@@ -9,7 +9,7 @@ scalaVersion := "2.10.2"
 libraryDependencies ++=
   Seq(
     // TOOLs
-    "com.typesafe.akka" %% "akka-actor" % "2.2.2",
+    "com.typesafe.akka" %% "akka-actor" % "2.2.3",
     "org.scalaz" %% "scalaz-core" % "6.0.4",
     // Inject
     "com.google.guava" % "guava" % "16.0.1",
