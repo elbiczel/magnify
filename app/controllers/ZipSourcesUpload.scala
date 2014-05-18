@@ -2,23 +2,22 @@ package controllers
 
 import java.io.File
 import java.lang.String
-import java.util.concurrent.Executors
 
 import scala.concurrent.{ExecutionContext, Future}
 
 import magnify.features.Sources
 import magnify.model.{Git, Json, Zip}
 import magnify.modules.inject
+import play.api.Logger
 import play.api.libs.Files
 import play.api.mvc._
-import play.api.Logger
 
 /**
  * @author Cezary Bartoszuk (cezary@codilime.com)
  */
-object ZipSourcesUpload extends ZipSourcesUpload(inject[Sources])
+object ZipSourcesUpload extends ZipSourcesUpload(inject[Sources], inject[ExecutionContext])
 
-sealed class ZipSourcesUpload (protected override val sources: Sources)
+sealed class ZipSourcesUpload (protected override val sources: Sources, implicit val pool: ExecutionContext)
     extends Controller with ProjectList {
 
   private val logger = Logger(classOf[ZipSourcesUpload].getSimpleName)
@@ -30,9 +29,6 @@ sealed class ZipSourcesUpload (protected override val sources: Sources)
     "text/x-javascript", "text/x-json", "application/octet-stream", "application/java-archive")
 
   private val progress = "success" -> "Project uploaded. Interpreting in background."
-
-  implicit val pool: ExecutionContext =
-    ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 
   def form = Action { implicit request =>
     Ok(views.html.newProject())
@@ -58,7 +54,10 @@ sealed class ZipSourcesUpload (protected override val sources: Sources)
     for (path <- gitPath; name <- projectName) Future {
       sources.add(name, Git(path, gitBranch))
     }.recover {
-      case t: Throwable => logger.error("Error processing project: " + name, t)
+      case t: Throwable => {
+        logger.error("Error processing project: " + name, t)
+        throw t
+      }
     }
     Redirect(routes.ZipSourcesUpload.form()).flashing(progress)
   }

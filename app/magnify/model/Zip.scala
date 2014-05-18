@@ -9,7 +9,7 @@ import scalaz.Monoid
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
  */
-final class Zip (file: File) extends Archive {
+final class Zip (val file: File) extends Archive {
   override def extract[A: Monoid](f: (String, Option[String], () => InputStream) => A): A = {
     val input = new FileInputStream(file)
     val zip = new ZipInputStream(new BufferedInputStream(input))

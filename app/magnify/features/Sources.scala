@@ -2,7 +2,7 @@ package magnify.features
 
 import java.io.File
 
-import magnify.model.{Archive, Json, SingleVersionArchive, VersionedArchive}
+import magnify.model._
 import magnify.model.graph.Graph
 
 /**
@@ -12,7 +12,7 @@ trait Sources {
 
   def add(name: String, archive: VersionedArchive): Unit
 
-  def add(name: String, archive: Archive): Unit = this.add(name, new SingleVersionArchive(archive))
+  def add(name: String, archive: Zip): Unit = this.add(name, new SingleVersionArchive(archive))
 
   def add(name: String, graph: Json): Unit
 

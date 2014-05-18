@@ -10,6 +10,8 @@ import com.tinkerpop.gremlin.java.GremlinPipeline
 import com.tinkerpop.pipes.PipeFunction
 import com.tinkerpop.pipes.branch.LoopPipe.LoopBundle
 import magnify.model.{ChangeDescription, VersionedArchive}
+import com.tinkerpop.blueprints.util.io.graphml.{GraphMLReader, GraphMLWriter}
+import java.io.{FileInputStream, BufferedInputStream, BufferedOutputStream, FileOutputStream}
 
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
@@ -20,12 +22,36 @@ object Graph {
 
   def tinker: Graph =
     new Graph(new TinkerGraph)
+
+  def load(fileName: String): Graph = {
+    val tinker = new TinkerGraph
+    val is = new BufferedInputStream(new FileInputStream(fileName))
+    GraphMLReader.inputGraph(tinker, is)
+    val graph = new Graph(tinker)
+    graph.headVertex = new GremlinPipeline(tinker.getVertices, true)
+        .filter(HeadVertexFilter)
+        .toList.head
+    graph
+  }
+
+  private object HeadVertexFilter extends PipeFunction[Vertex, lang.Boolean] {
+    override def compute(commit: Vertex): lang.Boolean = if (commit.getProperty("kind") != "commit") { false } else {
+      !commit.getEdges(Direction.OUT, "commit").iterator().hasNext
+    }
+  }
 }
 
-final class Graph (val blueprintsGraph: BlueprintsGraph) {
+final class Graph(val blueprintsGraph: BlueprintsGraph) {
 
   private var headVertex: Vertex = _
   private var parentRevVertex: Option[Vertex] = None
+
+  def save(fileName: String) = {
+    val os = new BufferedOutputStream(new FileOutputStream(fileName))
+    GraphMLWriter.outputGraph(blueprintsGraph, os)
+    os.flush()
+    os.close()
+  }
 
   def getSource(v: Vertex, vArchive: VersionedArchive): String = {
     if (v.getPropertyKeys.contains("source-code")) {

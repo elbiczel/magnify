@@ -1,6 +1,6 @@
 package magnify.model
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, InputStream}
+import java.io.{ByteArrayInputStream, File, FileWriter, InputStream}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -8,7 +8,7 @@ import scala.collection.JavaConversions._
 
 import org.eclipse.jgit.diff.{DiffFormatter, RawTextComparator}
 import org.eclipse.jgit.lib.{Constants, MutableObjectId, Repository}
-import org.eclipse.jgit.revwalk.{RevCommit, RevWalk}
+import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.util.io.DisabledOutputStream
@@ -18,7 +18,7 @@ import scalaz.Monoid
 /**
  * @author Tomasz Biczel (tomasz@biczel.com)
  */
-private[this] final class Git(repo: Repository, branch: Option[String]) extends VersionedArchive {
+private[this] final class Git(repo: Repository, branch: Option[String]) extends GitArchive {
 
   private val logger = Logger(classOf[Git].getSimpleName)
 
@@ -84,6 +84,21 @@ private[this] final class Git(repo: Repository, branch: Option[String]) extends 
     val loader = repo.open(mutableObjectId)
     new String(loader.getBytes)
   }
+
+  override def save(fileName: String): Unit = {
+    val writer = new FileWriter(fileName)
+    writer
+        .append(archiveTypeName)
+        .append("\n")
+        .append(repo.getDirectory.getAbsolutePath)
+        .append("\n")
+        .append(branch.getOrElse(""))
+        .append("\n")
+    writer.flush()
+    writer.close()
+  }
+
+  override val archiveTypeName: String = classOf[GitArchive].getSimpleName
 }
 
 private[this] final class GitCommit(

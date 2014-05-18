@@ -4,6 +4,7 @@ import java.io._
 
 import scala.collection.mutable
 import scala.collection.JavaConversions._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.matching.Regex
 
@@ -18,12 +19,33 @@ import play.api.Logger
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
  */
-private[features] final class GraphSources (parse: Parser, imports: Imports) extends Sources {
+private[features] final class GraphSources (parse: Parser, imports: Imports, implicit val pool: ExecutionContext)
+    extends Sources {
 
   private val logger = Logger(classOf[GraphSources].getSimpleName)
+  private val graphsDir = "graphs/"
 
   private val graphs = mutable.Map[String, (Graph, VersionedArchive)]()
   private val importedGraphs = mutable.Map[String, Json]()
+
+  Future {
+    logger.info("Loading graphs...")
+    val dir = new File(graphsDir)
+    val filesSet: Set[String] = dir.list().toSet
+    val projects = filesSet.map(_.split("\\.").head).filter(_.trim.nonEmpty)
+    projects.foreach { (project) =>
+      logger.info("Loading: " + project)
+      val graph = Graph.load(graphsDir + project + ".gml")
+
+      val archive = VersionedArchive.load(graphsDir + project + ".archive")
+      graphs += project -> (graph, archive)
+    }
+  }.recover {
+    case t: Throwable => {
+      logger.error("Error loading graphs", t)
+      throw t
+    }
+  }
 
   class ClassExtractor {
     var currentClasses = Map[String, Set[String]]() // file name -> class name
@@ -68,6 +90,15 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
     logger.info("Compute LOC starts: " + name + " : " + System.nanoTime())
     computeLinesOfCode(graph, vArchive)
     logger.info("Compute LOC finished: " + name + " : " + System.nanoTime())
+    Future {
+      graph.save(graphsDir + name + ".gml")
+      vArchive.save(graphsDir + name + ".archive")
+    }.recover {
+      case t: Throwable => {
+        logger.error("Error saving repo: " + name, t)
+        throw t
+      }
+    }
     graphs += name -> (graph, vArchive)
   }
 
@@ -139,7 +170,7 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
         cls.setProperty("source-code", parsedFile.content)
       }
       val linesOfCode = parsedFile.content.count(_ == '\n')
-      cls.setProperty("metric--lines-of-code", linesOfCode)
+      cls.setProperty("metric--lines-of-code", linesOfCode.toDouble)
       cls
   }
 
@@ -252,9 +283,9 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
         .in("in-package")
         .has("kind", "class")
         .property("metric--lines-of-code")
-        .toList.toSeq.asInstanceOf[mutable.Seq[Int]]
-      val avg = Option(elems).filter(_.size > 0).map(_.sum.toDouble / elems.size.toDouble)
-      pkg.setProperty("metric--lines-of-code", avg.getOrElse(0))
+        .toList.toSeq.asInstanceOf[mutable.Seq[Double]]
+      val avg = Option(elems).filter(_.size > 0).map(_.sum / elems.size.toDouble)
+      pkg.setProperty("metric--lines-of-code", avg.getOrElse(0.0))
     }
   }
 
