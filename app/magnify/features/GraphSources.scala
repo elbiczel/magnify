@@ -75,10 +75,9 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
     importedGraphs += name -> graph
   }
 
-  // TODO: Skip tests
   private def classesFrom(file: Archive, classExtractor: ClassExtractor): Seq[ParsedFile] =
     file.extract { (fileName, oFileId, content) =>
-      if (isJavaFile(fileName) && classExtractor.shouldParse(fileName)) {
+      if (isJavaFile(fileName) && classExtractor.shouldParse(fileName) && !isTestFile(fileName)) {
         val stringContent = inputStreamToString(content())
         val parsedFiles = for (
           ast <- parse(fileName, new ByteArrayInputStream(stringContent.getBytes("UTF-8")))
@@ -88,6 +87,11 @@ private[features] final class GraphSources (parse: Parser, imports: Imports) ext
       } else {
         Seq()
       }
+  }
+
+  private def isTestFile(fileName: String): Boolean = {
+    fileName.contains("/test/") || fileName.startsWith("test/") || fileName.contains("/tests/") ||
+        fileName.startsWith("tests/")
   }
 
   private def inputStreamToString(is: InputStream) = {

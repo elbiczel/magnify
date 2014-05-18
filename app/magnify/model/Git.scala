@@ -7,7 +7,7 @@ import scala.collection.mutable
 import scala.collection.JavaConversions._
 
 import org.eclipse.jgit.diff.{DiffFormatter, RawTextComparator}
-import org.eclipse.jgit.lib.{MutableObjectId, Repository}
+import org.eclipse.jgit.lib.{Constants, MutableObjectId, Repository}
 import org.eclipse.jgit.revwalk.{RevCommit, RevWalk}
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.TreeWalk
@@ -18,16 +18,12 @@ import scalaz.Monoid
 /**
  * @author Tomasz Biczel (tomasz@biczel.com)
  */
-private[this] final class Git(repo: Repository, branch: String) extends VersionedArchive {
+private[this] final class Git(repo: Repository, branch: Option[String]) extends VersionedArchive {
 
   private val logger = Logger(classOf[Git].getSimpleName)
 
   logger.info("Having repo: " + repo.getDirectory)
   logger.debug("Getting head of branch: " + branch)
-  val revWalk = new RevWalk(repo)
-  val head = revWalk.parseCommit(repo.getRef("refs/heads/" + branch).getObjectId)
-  logger.debug("Start Commit: " + head)
-  revWalk.markStart(head)
   val reader = repo.newObjectReader()
   val df = new DiffFormatter(DisabledOutputStream.INSTANCE)
   df.setRepository(repo)
@@ -35,16 +31,21 @@ private[this] final class Git(repo: Repository, branch: String) extends Versione
   df.setDetectRenames(false)
 
   override def extract[A: Monoid](f: (Archive, ChangeDescription) => A): A = {
+    val logs = new org.eclipse.jgit.api.Git(repo).log()
+        .all()
+        .add(repo.resolve(branch.map("refs/heads/" + _).getOrElse(Constants.HEAD)))
+        .call()
     val monoid = implicitly[Monoid[A]]
-    fold(monoid.zero, revWalk, None, (acc: A, archive: Archive, changeDesc: ChangeDescription) =>
+    fold(monoid.zero, logs.iterator(), None, (acc: A, archive: Archive, changeDesc: ChangeDescription) =>
       monoid.append(acc, f(archive, changeDesc)))
   }
 
   @tailrec
   private def fold[A](
-      acc: A, revWalk: RevWalk, oParentCommit: Option[RevCommit],
+      acc: A, revWalk: Iterator[RevCommit], oParentCommit: Option[RevCommit],
       transform: (A, Archive, ChangeDescription) => A): A = {
-    Option(revWalk.next()) match {
+    val oRevCommit = if (revWalk.hasNext) { Option(revWalk.next()) } else { None }
+    oRevCommit match {
       case Some(revCommit) => {
         logger.debug("Processing commit: " + revCommit)
         val (changed, removed) = oParentCommit.map { parentCommit =>
@@ -134,8 +135,7 @@ object Git {
   private val logger = Logger(classOf[Git].getSimpleName)
 
   def apply(path: String, branch: Option[String] = None): VersionedArchive = new Git(
-    createRepo(path),
-    branch.getOrElse("master"))
+    createRepo(path), branch)
 
   private def createRepo(path: String): Repository = if (isRemote(path)) {
     cloneRemoteRepo(path)
