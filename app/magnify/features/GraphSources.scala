@@ -143,7 +143,7 @@ private[features] final class GraphSources(
     val changedClassNames = classes.map(_.ast.className).toSet
     val classesImportingChanged = classesImporting(graph, changedClassNames, allClasses)
     val newClassesByOldName = classesImportingChanged.map { (v) =>
-      val allImported = v.getVertices(Direction.OUT, "imports").toSeq
+      val allImported = v.getVertices(Direction.OUT, "imports").toSet
       val allImportedNames = allImported.map(_.getProperty[String]("name"))
       val changedImported = allImportedNames.filter(changedClassNames)
       (v -> changedImported)

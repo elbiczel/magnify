@@ -8,12 +8,13 @@ import scala.collection.JavaConversions._
 
 import org.eclipse.jgit.diff.{DiffFormatter, RawTextComparator}
 import org.eclipse.jgit.lib.{Constants, MutableObjectId, Repository}
-import org.eclipse.jgit.revwalk.RevCommit
+import org.eclipse.jgit.revwalk.{RevWalk, RevCommit}
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.util.io.DisabledOutputStream
 import play.api.Logger
 import scalaz.Monoid
+import org.eclipse.jgit.revwalk.filter.RevFilter
 
 /**
  * @author Tomasz Biczel (tomasz@biczel.com)
@@ -31,29 +32,30 @@ private[this] final class Git(repo: Repository, branch: Option[String]) extends 
   df.setDetectRenames(false)
 
   override def extract[A: Monoid](f: (Archive, ChangeDescription) => A): A = {
-    val logs = new org.eclipse.jgit.api.Git(repo).log()
-        .all()
-        .add(repo.resolve(branch.map("refs/heads/" + _).getOrElse(Constants.HEAD)))
-        .call()
+    val walk = new RevWalk(repo)
+    val startCommitId = repo.resolve(branch.map("refs/heads/" + _).getOrElse(Constants.HEAD))
+    val startCommit = walk.lookupCommit(startCommitId)
+    walk.markStart(startCommit)
+    walk.setRevFilter(RevFilter.NO_MERGES)
     val monoid = implicitly[Monoid[A]]
-    fold(monoid.zero, logs.toSeq.reverseIterator, None, (acc: A, archive: Archive, changeDesc: ChangeDescription) =>
+    fold(monoid.zero, walk.toSeq.reverseIterator, (acc: A, archive: Archive, changeDesc: ChangeDescription) =>
       monoid.append(acc, f(archive, changeDesc)))
   }
 
   @tailrec
   private def fold[A](
-      acc: A, revWalk: Iterator[RevCommit], oParentCommit: Option[RevCommit],
+      acc: A, revWalk: Iterator[RevCommit],
       transform: (A, Archive, ChangeDescription) => A): A = {
     val oRevCommit = if (revWalk.hasNext) { Option(revWalk.next()) } else { None }
     oRevCommit match {
       case Some(revCommit) => {
         logger.debug("Processing commit: " + revCommit)
-        val (added, changed, removed) = oParentCommit.map { parentCommit =>
-          val diffs = df.scan(parentCommit.getTree, revCommit.getTree).toSeq
+        val (added, changed, removed) = if (revCommit.getParentCount > 0) {
+          val diffs = df.scan(revCommit.getParent(0).getTree, revCommit.getTree).toSeq
           (diffs.filter(_.getOldPath eq "/dev/null").map(_.getNewPath).toSet,
            diffs.filter(_.getOldPath ne "/dev/null").map(_.getNewPath).filter(_ ne "/dev/null").toSet,
            diffs.filter(_.getNewPath eq "/dev/null").map(_.getOldPath).toSet)
-        }.getOrElse {
+        } else {
           val tree = revCommit.getTree()
           val treeWalk = new TreeWalk(repo)
           treeWalk.addTree(tree)
@@ -73,7 +75,7 @@ private[this] final class Git(repo: Repository, branch: Option[String]) extends 
           added,
           changed,
           removed)
-        fold(transform(acc, new GitCommit(repo, revCommit), changeDesc), revWalk, Some(revCommit), transform)
+        fold(transform(acc, new GitCommit(repo, revCommit), changeDesc), revWalk, transform)
       }
       case None => acc
     }
