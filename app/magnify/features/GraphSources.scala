@@ -24,7 +24,7 @@ private[features] final class GraphSources(
   private val logger = Logger(classOf[GraphSources].getSimpleName)
   private val graphsDir = "graphs/"
 
-  private val graphs = mutable.Map[String, (FullGraph, VersionedArchive)]()
+  private val graphs = mutable.Map[String, FullGraph]()
   private val importedGraphs = mutable.Map[String, Json]()
 
   Future {
@@ -34,9 +34,8 @@ private[features] final class GraphSources(
     val projects = filesSet.map(_.split("\\.").head).filter(_.trim.nonEmpty)
     projects.foreach { (project) =>
       logger.info("Loading: " + project)
-      val graph = FullGraph.load(graphsDir + project + ".gml", pool)
-      val archive = VersionedArchive.load(graphsDir + project + ".archive")
-      graphs += project -> (graph, archive)
+      val graph = FullGraph.load(graphsDir + project, pool)
+      graphs += project -> graph
     }
   }.recover {
     case t: Throwable => {
@@ -64,7 +63,7 @@ private[features] final class GraphSources(
   }
 
   override def add(name: String, vArchive: VersionedArchive) {
-    val graph = FullGraph.tinker
+    val graph = FullGraph.tinker(vArchive)
     val classExtractor = new ClassExtractor()
     logger.info("Revision analysis starts: " + name + " : " + System.nanoTime())
     vArchive.extract { (archive, diff) =>
@@ -75,18 +74,22 @@ private[features] final class GraphSources(
       Seq() // for monoid to work
     }
     logger.info("Revision analysis finished: " + name + " : " + System.nanoTime())
+    logger.info("Metrics analysis starts: " + name + " : " + System.nanoTime())
+    val graphWithMetrics = metrics.foldLeft(graph) { case (graph, metric) =>
+      metric(graph)
+    }
+    logger.info("Metrics analysis finished: " + name + " : " + System.nanoTime())
     Future {
       // generate head graph
-      graph.forRevision()
-      graph.save(graphsDir + name + ".gml")
-      vArchive.save(graphsDir + name + ".archive")
+      graphWithMetrics.forRevision()
+      graphWithMetrics.save(graphsDir + name)
     }.recover {
       case t: Throwable => {
         logger.error("Error saving repo: " + name, t)
         throw t
       }
     }
-    graphs += name -> (graph, vArchive)
+    graphs += name -> graphWithMetrics
   }
 
   override def add(name: String, graph: Json) {
@@ -205,7 +208,7 @@ private[features] final class GraphSources(
     graphs.keys.toSeq ++ importedGraphs.keys.toSeq
 
   override def get(name: String): Option[FullGraph] =
-    graphs.get(name).map(_._1)
+    graphs.get(name)
 
   override def getJson(name: String) =
     importedGraphs.get(name)

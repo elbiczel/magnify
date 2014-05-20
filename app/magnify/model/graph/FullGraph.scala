@@ -22,14 +22,15 @@ object FullGraph {
   implicit def gremlinPipelineAsScalaIterable[S, E](pipe: GremlinPipeline[S, E]): Iterable[E] =
     collectionAsScalaIterable(pipe.toList)
 
-  def tinker: FullGraph =
-    new FullGraph(new TinkerGraph)
+  def tinker(archive: VersionedArchive): FullGraph =
+    new FullGraph(new TinkerGraph, archive)
 
   def load(fileName: String, pool: ExecutionContext): FullGraph = {
     val tinker = new TinkerGraph
-    val is = new BufferedInputStream(new FileInputStream(fileName))
+    val is = new BufferedInputStream(new FileInputStream(fileName + ".gml"))
     GraphMLReader.inputGraph(tinker, is)
-    val graph = new FullGraph(tinker)
+    val archive = VersionedArchive.load(fileName + ".archive")
+    val graph = new FullGraph(tinker, archive)
     graph.headVertex = new GremlinPipeline(tinker.getVertices, true)
         .filter(HeadVertexFilter)
         .toList.head
@@ -47,7 +48,7 @@ object FullGraph {
   }
 }
 
-final class FullGraph(override val graph: BlueprintsGraph) extends Graph {
+final class FullGraph(override val graph: BlueprintsGraph, archive: VersionedArchive) extends Graph {
 
   private var headVertex: Vertex = _
   private var parentRevVertex: Option[Vertex] = None
@@ -55,10 +56,11 @@ final class FullGraph(override val graph: BlueprintsGraph) extends Graph {
   private val versions = mutable.Map[Option[String], Graph]()
 
   def save(fileName: String): Unit = {
-    val os = new BufferedOutputStream(new FileOutputStream(fileName))
+    val os = new BufferedOutputStream(new FileOutputStream(fileName + ".gml"))
     GraphMLWriter.outputGraph(graph, os)
     os.flush()
     os.close()
+    archive.save(fileName + ".archive")
   }
 
   def forRevision(rev: Option[String] = None): Graph = {
@@ -69,11 +71,11 @@ final class FullGraph(override val graph: BlueprintsGraph) extends Graph {
     })
   }
 
-  def getSource(v: Vertex, vArchive: VersionedArchive): String = {
+  def getSource(v: Vertex): String = {
     if (v.getPropertyKeys.contains("source-code")) {
       v.getProperty("source-code")
     } else {
-      vArchive.getContent(v.getProperty("object-id"))
+      archive.getContent(v.getProperty("object-id"))
     }
   }
 
