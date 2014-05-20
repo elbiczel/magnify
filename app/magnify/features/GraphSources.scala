@@ -69,8 +69,10 @@ private[features] final class GraphSources(
     vArchive.extract { (archive, diff) =>
       classExtractor.newCommit(diff)
       val classes = classesFrom(archive, classExtractor)
-      processRevision(graph, diff, classes, classExtractor.classes)
-      graph.commitVersion(diff, classExtractor.classes)
+      if (classes.nonEmpty) {
+        processRevision(graph, diff, classes, classExtractor.classes)
+        graph.commitVersion(diff, classExtractor.classes)
+      }
       Seq() // for monoid to work
     }
     logger.info("Revision analysis finished: " + name + " : " + System.nanoTime())
@@ -112,7 +114,7 @@ private[features] final class GraphSources(
 
   private def isTestFile(fileName: String): Boolean = {
     fileName.contains("/test/") || fileName.startsWith("test/") || fileName.contains("/tests/") ||
-        fileName.startsWith("tests/") || fileName.endsWith("Test.java")
+        fileName.startsWith("tests/")
   }
 
   private def inputStreamToString(is: InputStream) = {

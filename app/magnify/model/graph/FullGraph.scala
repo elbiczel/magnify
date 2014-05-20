@@ -99,9 +99,15 @@ final class FullGraph(override val graph: BlueprintsGraph, archive: VersionedArc
     }.getOrElse(vertices)
 
   private def getPrevCommitVertex(kind: String, name: String, props: Map[String, String]): Option[Vertex] = {
-    var pipeline = currentVertices.has("kind", kind).has("name", name)
-    props.keys.foreach((prop) => pipeline = pipeline.has(prop, props(prop)))
-    val vertex = pipeline.transform(new AsVertex).dedup().toList.toSet
+    val vertex = props
+        .foldLeft[GremlinPipeline[Vertex, Element]](currentVertices.has("kind", kind).has("name", name)
+            .asInstanceOf[GremlinPipeline[Vertex, Element]]) { case (pipe, (prop, propValue)) =>
+              pipe.has(prop, propValue).asInstanceOf[GremlinPipeline[Vertex, Element]]
+            }
+        .transform(new AsVertex)
+        .dedup
+        .toList
+        .toSet
     require(vertex.size <= 1, parentRevVertex.map(_.getProperty("rev")).getOrElse("parent") + " : " +
         vertex.map((v) => "V[" + Seq(v.getProperty("name"), v.getProperty("kind"), v.getId.toString).mkString(", ") + "]").mkString(", "))
     vertex.headOption
@@ -111,30 +117,29 @@ final class FullGraph(override val graph: BlueprintsGraph, archive: VersionedArc
     val oldVertex: Option[Vertex] = getPrevCommitVertex(kind, name, props)
     val newVertex = addVertex(kind, name)
     props.keys.foreach((prop) => newVertex.setProperty(prop, props(prop)))
-    (newVertex, oldVertex.map(addEdge(newVertex, "commit", _)))
+    (newVertex, oldVertex.map(addEdge(_, "commit", newVertex)))
   }
 
   def commitVersion(changeDescription: ChangeDescription, classes: Set[String]): Unit = {
     val revVertex = addVertex("commit", changeDescription.revision)
     changeDescription.setProperties(revVertex)
-    headVertex = parentRevVertex.map { parentRev =>
-      this.addEdge(revVertex, "commit", parentRev)
-      headVertex
-    }.getOrElse(revVertex)
+    parentRevVertex.map { parentRev =>
+      this.addEdge(parentRev, "commit", revVertex)
+    }
 
-    val currentClasses = currentVertices
+    currentVertices
         .has("kind", "class")
         .filter(HasInFilter("name", classes))
         .filter(NotFilter(HasInFilter("file-name", changeDescription.removedFiles)))
         .transform(new AsVertex())
-    val classVertices = currentClasses.toList
-    val currentPackages =
-      new GremlinPipeline(classVertices, true).out("in-package").loop(1, TrueFilter, TrueFilter).dedup()
-    val pkgVertices = currentPackages.toList
-    for (inRevVertex <- classVertices ++ pkgVertices) {
-      this.addEdge(inRevVertex, "in-revision", revVertex)
-    }
+        .sideEffect(new PipeFunction[Vertex, Vertex] {
+          override def compute(v: Vertex): Vertex = {
+            addEdge(v, "in-revision", revVertex)
+            v
+          }
+        }).iterate()
     parentRevVertex = Some(revVertex)
+    headVertex = revVertex
   }
 
   private object TrueFilter extends PipeFunction[LoopBundle[Vertex], lang.Boolean] {

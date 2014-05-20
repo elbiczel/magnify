@@ -7,7 +7,7 @@ import scalaz.Monoid
 final class SingleVersionArchive(archive: Zip) extends SingleVersion {
 
   val changedFiles = archive.extract((fileName, oObjectId, content) => Set(fileName))
-  val diff = ChangeDescription("", "", "", "", 0, changedFiles, Set[String]())
+  val diff = ChangeDescription("", "", "", "", 0, changedFiles, Set[String](), Set[String]())
 
   override def extract[A: Monoid](f: (Archive, ChangeDescription) => A): A = f(archive, diff)
 
