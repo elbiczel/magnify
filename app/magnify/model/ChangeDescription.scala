@@ -9,6 +9,7 @@ final case class ChangeDescription(
     author: String,
     committer: String,
     time: Int,
+    addedFiles: Set[String],
     changedFiles: Set[String],
     removedFiles: Set[String]) {
 

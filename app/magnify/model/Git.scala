@@ -36,7 +36,7 @@ private[this] final class Git(repo: Repository, branch: Option[String]) extends 
         .add(repo.resolve(branch.map("refs/heads/" + _).getOrElse(Constants.HEAD)))
         .call()
     val monoid = implicitly[Monoid[A]]
-    fold(monoid.zero, logs.iterator(), None, (acc: A, archive: Archive, changeDesc: ChangeDescription) =>
+    fold(monoid.zero, logs.toSeq.reverseIterator, None, (acc: A, archive: Archive, changeDesc: ChangeDescription) =>
       monoid.append(acc, f(archive, changeDesc)))
   }
 
@@ -48,20 +48,21 @@ private[this] final class Git(repo: Repository, branch: Option[String]) extends 
     oRevCommit match {
       case Some(revCommit) => {
         logger.debug("Processing commit: " + revCommit)
-        val (changed, removed) = oParentCommit.map { parentCommit =>
-          val diffs = df.scan(revCommit.getTree, parentCommit.getTree).toSeq
-          (diffs.map((diff) => diff.getOldPath).filter(_ ne "/dev/null").toSet,
-           diffs.filter(_.getOldPath eq "/dev/null").map(_.getNewPath).toSet)
+        val (added, changed, removed) = oParentCommit.map { parentCommit =>
+          val diffs = df.scan(parentCommit.getTree, revCommit.getTree).toSeq
+          (diffs.filter(_.getOldPath eq "/dev/null").map(_.getNewPath).toSet,
+           diffs.filter(_.getOldPath ne "/dev/null").map(_.getNewPath).filter(_ ne "/dev/null").toSet,
+           diffs.filter(_.getNewPath eq "/dev/null").map(_.getOldPath).toSet)
         }.getOrElse {
           val tree = revCommit.getTree()
           val treeWalk = new TreeWalk(repo)
           treeWalk.addTree(tree)
           treeWalk.setRecursive(true)
-          val files = mutable.ListBuffer[String]()
+          val files = mutable.Set[String]()
           while (treeWalk.next()) {
             files += treeWalk.getPathString
           }
-          (files.toSet, Set[String]())
+          (files.toSet, Set[String](), Set[String]())
         }
         val changeDesc = ChangeDescription(
           reader.abbreviate(revCommit.getId).name,
@@ -69,6 +70,7 @@ private[this] final class Git(repo: Repository, branch: Option[String]) extends 
           revCommit.getAuthorIdent.toExternalString,
           revCommit.getCommitterIdent.toExternalString,
           revCommit.getCommitTime,
+          added,
           changed,
           removed)
         fold(transform(acc, new GitCommit(repo, revCommit), changeDesc), revWalk, Some(revCommit), transform)

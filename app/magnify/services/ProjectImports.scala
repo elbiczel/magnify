@@ -26,7 +26,8 @@ private[services] final class ProjectImports extends Imports {
       ) yield (packageName + "." + className)
       val implicitImports = (possibleImports ++ unresolvedClasses).filter(allClasses)
       logger.debug("implicitImports in " + name + " : " + implicitImports.mkString(", "))
-      (name, (imports.filter(allClasses) ++ implicitImports).toSeq)
+      val allImports = (imports.filter(allClasses) ++ implicitImports) - name
+      (name -> allImports.toSeq)
     }
     imports.toMap
   }

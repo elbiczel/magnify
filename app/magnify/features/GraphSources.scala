@@ -45,7 +45,7 @@ private[features] final class GraphSources(
   }
 
   class ClassExtractor {
-    var currentClasses = Map[String, Set[String]]() // file name -> class name
+    var currentClasses = Map[String, Set[String]]() // file name -> class names
     var changedFiles = Set[String]()
 
     def newCommit(diff: ChangeDescription): Unit = {
@@ -56,7 +56,7 @@ private[features] final class GraphSources(
     def shouldParse(fileName: String): Boolean =
       changedFiles.contains(fileName) || !currentClasses.containsKey(fileName)
 
-    def parsedFile(fileName: String, classes: Seq[ParsedFile]) =
+    def parsedFile(fileName: String, classes: Seq[ParsedFile]): Unit =
       currentClasses = currentClasses.updated(fileName, classes.map(_.ast.className).toSet)
 
     def classes: Set[String] = currentClasses.values.toSet.flatten
@@ -181,7 +181,6 @@ private[features] final class GraphSources(
         .in("imports")
         .filter(HasInFilter("name", allClasses))
         .filter(NotFilter(hasInFilter))
-        .filter(graph.currentRevisionFilter)
         .dedup()
         .toList.toSet
   }

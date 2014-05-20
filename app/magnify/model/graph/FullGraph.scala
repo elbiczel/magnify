@@ -92,11 +92,7 @@ final class FullGraph(override val graph: BlueprintsGraph, archive: VersionedArc
     Seq(head) ++ older
   }
 
-  def currentVertices: GremlinPipeline[Vertex, Vertex] =
-    parentRevVertex.map { revVertex =>
-      new GremlinPipeline().start(revVertex).in("in-revision")
-      .transform(NewVertex)
-    }.getOrElse(vertices)
+  def currentVertices: GremlinPipeline[Vertex, Vertex] = vertices.filter(NoNewVertex)
 
   private def getPrevCommitVertex(kind: String, name: String, props: Map[String, String]): Option[Vertex] = {
     val vertex = props
@@ -145,21 +141,11 @@ final class FullGraph(override val graph: BlueprintsGraph, archive: VersionedArc
   private object TrueFilter extends PipeFunction[LoopBundle[Vertex], lang.Boolean] {
     override def compute(argument: LoopBundle[Vertex]): lang.Boolean = true
   }
+}
 
-  private object NewVertex extends PipeFunction[Vertex, Vertex] {
-    override def compute(v: Vertex): Vertex = {
-      val it = v.getVertices(Direction.IN, "commit").iterator()
-      if (it.hasNext) { it.next() } else { v }
-    }
-  }
-
-  def currentRevisionFilter: PipeFunction[Vertex, lang.Boolean] = new PipeFunction[Vertex, lang.Boolean] {
-    override def compute(v: Vertex): lang.Boolean = parentRevVertex match {
-      case None => true
-      case Some(revV) => {
-        v.getVertices(Direction.OUT, "in-revision").toSet.contains(revV)
-      }
-    }
+object NoNewVertex extends PipeFunction[Vertex, lang.Boolean] {
+  override def compute(v: Vertex): lang.Boolean = {
+    !v.getVertices(Direction.IN, "commit").iterator().hasNext
   }
 }
 
