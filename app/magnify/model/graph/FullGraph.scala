@@ -47,7 +47,7 @@ object FullGraph {
   }
 }
 
-final class FullGraph(val blueprintsGraph: BlueprintsGraph) extends Graph {
+final class FullGraph(override val graph: BlueprintsGraph) extends Graph {
 
   private var headVertex: Vertex = _
   private var parentRevVertex: Option[Vertex] = None
@@ -56,7 +56,7 @@ final class FullGraph(val blueprintsGraph: BlueprintsGraph) extends Graph {
 
   def save(fileName: String): Unit = {
     val os = new BufferedOutputStream(new FileOutputStream(fileName))
-    GraphMLWriter.outputGraph(blueprintsGraph, os)
+    GraphMLWriter.outputGraph(graph, os)
     os.flush()
     os.close()
   }
@@ -96,12 +96,6 @@ final class FullGraph(val blueprintsGraph: BlueprintsGraph) extends Graph {
       .transform(NewVertex)
     }.getOrElse(vertices)
 
-  override def vertices: GremlinPipeline[Vertex, Vertex] =
-    new GremlinPipeline(blueprintsGraph.getVertices, true)
-
-  override def edges: GremlinPipeline[Edge, Edge] =
-    new GremlinPipeline(blueprintsGraph.getEdges, true)
-
   private def getPrevCommitVertex(kind: String, name: String, props: Map[String, String]): Option[Vertex] = {
     var pipeline = currentVertices.has("kind", kind).has("name", name)
     props.keys.foreach((prop) => pipeline = pipeline.has(prop, props(prop)))
@@ -113,23 +107,13 @@ final class FullGraph(val blueprintsGraph: BlueprintsGraph) extends Graph {
 
   def addVertex(kind: String, name: String, props: Map[String, String] = Map()): (Vertex, Option[Edge]) = {
     val oldVertex: Option[Vertex] = getPrevCommitVertex(kind, name, props)
-    val newVertex = rawAddVertex(kind, name)
+    val newVertex = addVertex(kind, name)
     props.keys.foreach((prop) => newVertex.setProperty(prop, props(prop)))
     (newVertex, oldVertex.map(addEdge(newVertex, "commit", _)))
   }
 
-  private def rawAddVertex(kind: String, name: String) = {
-    val newVertex = blueprintsGraph.addVertex(null)
-    newVertex.setProperty("kind", kind)
-    newVertex.setProperty("name", name)
-    newVertex
-  }
-
-  def addEdge(from: Vertex, label: String, to: Vertex): Edge =
-    blueprintsGraph.addEdge(null, from, to, label)
-
   def commitVersion(changeDescription: ChangeDescription, classes: Set[String]): Unit = {
-    val revVertex = rawAddVertex("commit", changeDescription.revision)
+    val revVertex = addVertex("commit", changeDescription.revision)
     changeDescription.setProperties(revVertex)
     headVertex = parentRevVertex.map { parentRev =>
       this.addEdge(revVertex, "commit", parentRev)

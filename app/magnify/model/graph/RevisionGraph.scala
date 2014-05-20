@@ -11,12 +11,7 @@ import com.tinkerpop.pipes.PipeFunction
 import edu.uci.ics.jung.algorithms.scoring.PageRank
 import play.api.Logger
 
-class RevisionGraph(val graph: BlueprintsGraph) extends Graph {
-  override def vertices: GremlinPipeline[Vertex, Vertex] =
-    new GremlinPipeline(graph.getVertices, true)
-
-  override def edges: GremlinPipeline[Edge, Edge] =
-    new GremlinPipeline(graph.getEdges, true)
+final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph {
 
   private def addPackages(): Unit = {
     val classVertices = vertices.has("kind", "class").toList.toSeq.asInstanceOf[Seq[Vertex]]
@@ -30,7 +25,7 @@ class RevisionGraph(val graph: BlueprintsGraph) extends Graph {
       val classVertex = classesByNames(clsName)
       val parentPackageName = parentPkgName(clsName)
       val parentPackageVertex = packageByName(parentPackageName)
-      graph.addEdge(null, classVertex, parentPackageVertex, "in-package")
+      addEdge(classVertex, "in-package", parentPackageVertex)
     }
   }
 
@@ -41,17 +36,12 @@ class RevisionGraph(val graph: BlueprintsGraph) extends Graph {
     } yield (pkgName)).toSet.toSeq
   }
 
-  private def addPackageVertex(pkgName: String): Vertex = {
-    val newVertex = graph.addVertex(null)
-    newVertex.setProperty("kind", "package")
-    newVertex.setProperty("name", pkgName)
-    newVertex
-  }
+  private def addPackageVertex(pkgName: String): Vertex = addVertex("package", pkgName)
 
   private def addPackageEdges(packageByName: Map[String, Vertex]) {
     for ((name, pkg) <- packageByName; if name.nonEmpty) {
       val outer = packageByName(parentPkgName(name))
-      graph.addEdge(null, pkg, outer, "in-package")
+      addEdge(pkg, "in-package", outer)
     }
   }
 
@@ -83,7 +73,7 @@ class RevisionGraph(val graph: BlueprintsGraph) extends Graph {
           .out("in-package")
           .toList.toSet[Vertex]
     } {
-      graph.addEdge(null, pkg, importsPkg, "package-imports")
+      addEdge(pkg, "package-imports", importsPkg)
     }
   }
 
