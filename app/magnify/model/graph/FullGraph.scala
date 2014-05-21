@@ -31,24 +31,23 @@ object FullGraph {
     GraphMLReader.inputGraph(tinker, is)
     val archive = VersionedArchive.load(fileName + ".archive")
     val graph = new FullGraph(tinker, archive)
-    graph.headVertex = new GremlinPipeline(tinker.getVertices, true)
-        .filter(HeadVertexFilter)
-        .toList.head
+    graph.headVertex = graph.getHeadCommitVertex.toList.head
     Future {
       graph.forRevision()
     }(pool)
     graph
   }
-
-  private object HeadVertexFilter extends PipeFunction[Vertex, lang.Boolean] {
-    override def compute(commit: Vertex): lang.Boolean =
-      if (commit.getProperty[String]("kind") != "commit") { false } else {
-        !commit.getEdges(Direction.OUT, "commit").iterator().hasNext
-      }
-  }
 }
 
 final class FullGraph(override val graph: BlueprintsGraph, archive: VersionedArchive) extends Graph {
+
+  def getHeadCommitVertex: GremlinPipeline[Vertex, Vertex] =
+    vertices
+    .filter(HeadCommitFilter)
+
+  def getTailCommitVertex: GremlinPipeline[Vertex, Vertex] =
+    vertices
+    .filter(TailCommitFilter)
 
   private var headVertex: Vertex = _
   private var parentRevVertex: Option[Vertex] = None
@@ -92,7 +91,7 @@ final class FullGraph(override val graph: BlueprintsGraph, archive: VersionedArc
     Seq(head) ++ older
   }
 
-  def currentVertices: GremlinPipeline[Vertex, Vertex] = vertices.filter(NoNewVertex)
+  def currentVertices: GremlinPipeline[Vertex, Vertex] = vertices.filter(NoNewVertexFilter)
 
   private def getPrevCommitVertex(kind: String, name: String, props: Map[String, String]): Option[Vertex] = {
     val vertex = props
@@ -137,28 +136,4 @@ final class FullGraph(override val graph: BlueprintsGraph, archive: VersionedArc
     parentRevVertex = Some(revVertex)
     headVertex = revVertex
   }
-
-  private object TrueFilter extends PipeFunction[LoopBundle[Vertex], lang.Boolean] {
-    override def compute(argument: LoopBundle[Vertex]): lang.Boolean = true
-  }
-}
-
-object NoNewVertex extends PipeFunction[Vertex, lang.Boolean] {
-  override def compute(v: Vertex): lang.Boolean = {
-    !v.getVertices(Direction.IN, "commit").iterator().hasNext
-  }
-}
-
-class AsVertex[T <: Element] extends PipeFunction[T, Vertex] {
-  override def compute(argument: T): Vertex = argument.asInstanceOf[Vertex]
-}
-
-case class HasInFilter[T <: Element](property: String, values: Set[String])
-    extends PipeFunction[T, lang.Boolean] {
-  override def compute(element: T): lang.Boolean = values.contains(element.getProperty(property))
-}
-
-case class NotFilter[T <: Element](filter: PipeFunction[T, lang.Boolean])
-    extends PipeFunction[T, lang.Boolean] {
-  override def compute(argument: T): lang.Boolean = !filter.compute(argument)
 }
