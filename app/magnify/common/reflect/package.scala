@@ -12,7 +12,7 @@ package object reflect {
    * @throws MatchError if `ActorRefModule` doesn't have only one constructor.
    */
   def constructor[A](implicit manifest: Manifest[A]): Constructor[A] = {
-    val Array(onlyConstructor) = manifest.erasure.getConstructors
+    val Array(onlyConstructor) = manifest.runtimeClass.getConstructors
     onlyConstructor.asInstanceOf[Constructor[A]]
   }
 }

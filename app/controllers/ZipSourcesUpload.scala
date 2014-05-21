@@ -15,7 +15,7 @@ import play.api.mvc._
 /**
  * @author Cezary Bartoszuk (cezary@codilime.com)
  */
-object ZipSourcesUpload extends ZipSourcesUpload(inject[Sources], inject[ExecutionContext])
+object ZipSourcesUpload extends ZipSourcesUpload(inject[Sources], inject[ExecutionContext]("UiPool"))
 
 sealed class ZipSourcesUpload (protected override val sources: Sources, implicit val pool: ExecutionContext)
     extends Controller with ProjectList {

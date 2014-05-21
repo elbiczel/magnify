@@ -1,6 +1,7 @@
 package magnify
 
-import com.google.inject.Guice
+import com.google.inject.{Guice, Key}
+import com.google.inject.name.Names
 import magnify.features.Features
 import magnify.services.Services
 
@@ -11,5 +12,8 @@ package object modules {
   private val injector = Guice.createInjector(new Features(), new Services())
 
   def inject[A](implicit manifest: Manifest[A]): A =
-    injector.getInstance(manifest.erasure.asInstanceOf[Class[A]])
+    injector.getInstance(manifest.runtimeClass.asInstanceOf[Class[A]])
+
+  def inject[A](name: String)(implicit manifest: Manifest[A]): A =
+    injector.getInstance(Key.get(manifest.runtimeClass.asInstanceOf[Class[A]], Names.named(name)))
 }

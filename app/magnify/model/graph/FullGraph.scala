@@ -1,14 +1,12 @@
 package magnify.model.graph
 
-import java.io.{BufferedInputStream, BufferedOutputStream, FileInputStream, FileOutputStream}
+import java.io.{BufferedOutputStream, FileOutputStream}
 
 import scala.collection.mutable
 import scala.collection.JavaConversions._
-import scala.concurrent.{ExecutionContext, Future}
 
 import com.tinkerpop.blueprints.{Graph => BlueprintsGraph, _}
-import com.tinkerpop.blueprints.impls.tg.TinkerGraph
-import com.tinkerpop.blueprints.util.io.graphml.{GraphMLReader, GraphMLWriter}
+import com.tinkerpop.blueprints.util.io.graphml.GraphMLWriter
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import com.tinkerpop.pipes.PipeFunction
 import magnify.model.{ChangeDescription, VersionedArchive}
@@ -16,28 +14,13 @@ import magnify.model.{ChangeDescription, VersionedArchive}
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
  */
-object FullGraph {
-  implicit def gremlinPipelineAsScalaIterable[S, E](pipe: GremlinPipeline[S, E]): Iterable[E] =
-    collectionAsScalaIterable(pipe.toList)
+final class FullGraph(
+    override val graph: BlueprintsGraph,
+    archive: VersionedArchive,
+    private[this] var headVertex: Vertex)
+  extends Graph {
 
-  def tinker(archive: VersionedArchive): FullGraph =
-    new FullGraph(new TinkerGraph, archive)
-
-  def load(fileName: String, pool: ExecutionContext): FullGraph = {
-    val tinker = new TinkerGraph
-    val is = new BufferedInputStream(new FileInputStream(fileName + ".gml"))
-    GraphMLReader.inputGraph(tinker, is)
-    val archive = VersionedArchive.load(fileName + ".archive")
-    val graph = new FullGraph(tinker, archive)
-    graph.headVertex = graph.getHeadCommitVertex.toList.head
-    Future {
-      graph.forRevision()
-    }(pool)
-    graph
-  }
-}
-
-final class FullGraph(override val graph: BlueprintsGraph, archive: VersionedArchive) extends Graph {
+  def this(graph: BlueprintsGraph, archive: VersionedArchive) = this(graph, archive, null)
 
   def getHeadCommitVertex: GremlinPipeline[Vertex, Vertex] =
     vertices
@@ -47,7 +30,6 @@ final class FullGraph(override val graph: BlueprintsGraph, archive: VersionedArc
     vertices
     .filter(TailCommitFilter)
 
-  private var headVertex: Vertex = _
   private var parentRevVertex: Option[Vertex] = None
 
   private val versions = mutable.Map[Option[String], Graph]()

@@ -1,7 +1,7 @@
 package magnify.features
 
-import java.io._
 import java.util
+import java.io._
 
 import scala.collection.mutable
 import scala.collection.JavaConversions._
@@ -9,6 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.matching.Regex
 
+import com.google.inject.name.Named
 import com.tinkerpop.blueprints.{Direction, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import magnify.model._
@@ -19,7 +20,8 @@ import play.api.Logger
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
  */
 private[features] final class GraphSources(
-    parse: Parser, imports: Imports, metrics: util.Set[Metric], implicit val pool: ExecutionContext) extends Sources {
+    parse: Parser, imports: Imports, metrics: util.Set[Metric], graphFactory: FullGraphFactory,
+    @Named("ServicesPool") implicit val pool: ExecutionContext) extends Sources {
 
   private val logger = Logger(classOf[GraphSources].getSimpleName)
   private val graphsDir = "graphs/"
@@ -34,7 +36,7 @@ private[features] final class GraphSources(
     val projects = filesSet.map(_.split("\\.").head).filter(_.trim.nonEmpty)
     projects.foreach { (project) =>
       logger.info("Loading: " + project)
-      val graph = FullGraph.load(graphsDir + project, pool)
+      val graph = graphFactory.load(graphsDir + project)
       graphs += project -> graph
     }
   }.recover {
@@ -63,7 +65,7 @@ private[features] final class GraphSources(
   }
 
   override def add(name: String, vArchive: VersionedArchive) {
-    val graph = FullGraph.tinker(vArchive)
+    val graph = graphFactory.tinker(vArchive)
     val classExtractor = new ClassExtractor()
     logger.info("Revision analysis starts: " + name + " : " + System.nanoTime())
     vArchive.extract { (archive, diff) =>
