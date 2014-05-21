@@ -11,7 +11,7 @@ import com.google.inject.multibindings.Multibinder
  */
 final class Features extends AbstractModule {
   def configure() {
-    Multibinder.newSetBinder(binder(), classOf[Metrics])
+    Multibinder.newSetBinder(binder(), classOf[Metric])
     requireBinding(classOf[Imports])
     requireBinding(classOf[Parser])
     requireBinding(classOf[ExecutionContext])

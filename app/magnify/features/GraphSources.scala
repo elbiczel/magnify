@@ -19,7 +19,7 @@ import play.api.Logger
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
  */
 private[features] final class GraphSources(
-    parse: Parser, imports: Imports, metrics: util.Set[Metrics], implicit val pool: ExecutionContext) extends Sources {
+    parse: Parser, imports: Imports, metrics: util.Set[Metric], implicit val pool: ExecutionContext) extends Sources {
 
   private val logger = Logger(classOf[GraphSources].getSimpleName)
   private val graphsDir = "graphs/"

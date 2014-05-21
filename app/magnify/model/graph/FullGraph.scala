@@ -1,6 +1,5 @@
 package magnify.model.graph
 
-import java.lang
 import java.io.{BufferedInputStream, BufferedOutputStream, FileInputStream, FileOutputStream}
 
 import scala.collection.mutable
@@ -12,7 +11,6 @@ import com.tinkerpop.blueprints.impls.tg.TinkerGraph
 import com.tinkerpop.blueprints.util.io.graphml.{GraphMLReader, GraphMLWriter}
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import com.tinkerpop.pipes.PipeFunction
-import com.tinkerpop.pipes.branch.LoopPipe.LoopBundle
 import magnify.model.{ChangeDescription, VersionedArchive}
 
 /**
