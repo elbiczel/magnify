@@ -98,6 +98,7 @@ object RevisionGraph {
   val LABELS: Seq[String] = Seq("imports", "calls")
 
   def apply(full: FullGraph, revVertex: Vertex): Graph = {
+    logger.info("Subgraph creation starts: " + System.nanoTime())
     val tinker = new TinkerGraph
     revVertices(revVertex).sideEffect(new PipeFunction[Vertex, Vertex] {
       override def compute(argument: Vertex): Vertex = {
@@ -124,7 +125,10 @@ object RevisionGraph {
       }
     }).iterate()
     val revGraph = new RevisionGraph(tinker)
+    logger.info("Subgraph creation finished: " + System.nanoTime())
+    logger.info("Adding packages starts: " + System.nanoTime())
     revGraph.addPackages()
+    logger.info("Adding packages finished: " + System.nanoTime())
     logger.info("PageRank starts: " + System.nanoTime())
     revGraph.addPageRank()
     logger.info("PageRank finished: " + System.nanoTime())
