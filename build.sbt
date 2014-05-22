@@ -4,7 +4,7 @@ name := "magnify"
 
 version := "0.2.0-SNAPSHOT"
 
-scalaVersion := "2.10.2"
+scalaVersion := "2.11"
 
 libraryDependencies ++=
   Seq(
@@ -15,6 +15,8 @@ libraryDependencies ++=
     "com.google.guava" % "guava" % "16.0.1",
     "com.google.inject" % "guice" % "3.0",
     "com.google.inject.extensions" % "guice-multibindings" % "3.0",
+    "com.google.code.findbugs" % "jsr305" % "2.0.3",
+    "javax.inject" % "javax.inject" % "1", // jsr330
     // Graph
     "com.tinkerpop.blueprints" % "blueprints" % "2.4.0",
     "com.tinkerpop.blueprints" % "blueprints-graph-jung" % "2.4.0",

@@ -2,7 +2,7 @@ package magnify.model.graph
 
 import java.lang
 
-import com.tinkerpop.blueprints.{Direction, Element, Vertex}
+import com.tinkerpop.blueprints.{Direction, Edge, Element, Vertex}
 import com.tinkerpop.pipes.PipeFunction
 import com.tinkerpop.pipes.branch.LoopPipe.LoopBundle
 
@@ -44,7 +44,7 @@ object TrueFilter extends PipeFunction[LoopBundle[Vertex], lang.Boolean] {
 
 object NoNewVertexFilter extends PipeFunction[Vertex, lang.Boolean] {
   override def compute(v: Vertex): lang.Boolean = {
-    !v.getVertices(Direction.IN, "commit").iterator().hasNext
+    !v.getVertices(Direction.OUT, "commit").iterator().hasNext
   }
 }
 
@@ -60,4 +60,8 @@ case class NotFilter[T <: Element](filter: PipeFunction[T, lang.Boolean])
 
 class AsVertex[T <: Element] extends PipeFunction[T, Vertex] {
   override def compute(argument: T): Vertex = argument.asInstanceOf[Vertex]
+}
+
+class AsEdge[T <: Element] extends PipeFunction[T, Edge] {
+  override def compute(argument: T): Edge = argument.asInstanceOf[Edge]
 }

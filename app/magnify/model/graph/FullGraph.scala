@@ -2,9 +2,9 @@ package magnify.model.graph
 
 import java.io.{BufferedOutputStream, FileOutputStream}
 
-import scala.collection.mutable
 import scala.collection.JavaConversions._
 
+import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.tinkerpop.blueprints.{Graph => BlueprintsGraph, _}
 import com.tinkerpop.blueprints.util.io.graphml.GraphMLWriter
 import com.tinkerpop.gremlin.java.GremlinPipeline
@@ -32,7 +32,12 @@ final class FullGraph(
 
   private var parentRevVertex: Option[Vertex] = None
 
-  private val versions = mutable.Map[Option[String], Graph]()
+  private val versions: LoadingCache[Option[String], Graph] = CacheBuilder.newBuilder()
+      .maximumSize(100)
+      .softValues()
+      .build(new CacheLoader[Option[String], Graph] {
+        override def load(key: Option[String]): Graph = RevisionGraph(FullGraph.this, revVertex(key))
+     })
 
   def save(fileName: String): Unit = {
     val os = new BufferedOutputStream(new FileOutputStream(fileName + ".gml"))
@@ -42,13 +47,7 @@ final class FullGraph(
     archive.save(fileName + ".archive")
   }
 
-  def forRevision(rev: Option[String] = None): Graph = {
-    versions.getOrElse(rev, {
-      val revGraph = RevisionGraph(this, revVertex(rev))
-      versions.put(rev, revGraph)
-      revGraph
-    })
-  }
+  def forRevision(rev: Option[String] = None): Graph = versions.get(rev)
 
   def getSource(v: Vertex): String = {
     if (v.getPropertyKeys.contains("source-code")) {

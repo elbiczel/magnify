@@ -9,7 +9,7 @@ import com.google.inject.multibindings.Multibinder
 import com.google.inject.name.Names
 import magnify.common.reflect.constructor
 import magnify.features._
-import magnify.services.metrics.ExperienceMetric
+import magnify.services.metrics.{LoggedContributionMetric, LoggedExperienceMetric}
 
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
@@ -17,7 +17,8 @@ import magnify.services.metrics.ExperienceMetric
 final class Services extends AbstractModule {
   def configure() {
     val metricsBinder = Multibinder.newSetBinder(binder(), classOf[Metric])
-    metricsBinder.addBinding().toInstance(new ExperienceMetric with LoggedMetric)
+    metricsBinder.addBinding().toConstructor(constructor[LoggedExperienceMetric])
+    metricsBinder.addBinding().toConstructor(constructor[LoggedContributionMetric])
     bind(classOf[ExecutionContext])
         .annotatedWith(Names.named("ServicesPool"))
         .toInstance(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
