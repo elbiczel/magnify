@@ -4,24 +4,46 @@ package magnify.services.metrics
 import scala.collection.JavaConversions._
 
 import com.tinkerpop.blueprints.{Direction, Edge, Vertex}
+import com.tinkerpop.gremlin.java.GremlinPipeline
 import com.tinkerpop.pipes.PipeFunction
-import magnify.features.{LoggedMetric, Metric}
-import magnify.model.graph.{AsEdge, AsVertex, FullGraph}
+import magnify.features.{LoggedFunction, Metric, RevisionMetric}
+import magnify.model.graph._
 import play.api.Logger
 
-class ContributionMetric extends Metric {
+class ContributionMetric extends Metric with Actions {
 
   val logger = Logger(classOf[ContributionMetric].getSimpleName)
 
   override def apply(graph: FullGraph): FullGraph = {
     graph.edges.has("label", "commit").transform(new AsEdge).sideEffect(new GetClassContribution).iterate()
+    getRevisionClasses(graph.getTailCommitVertex).sideEffect(new PipeFunction[Vertex, Double] {
+      override def compute(v: Vertex): Double = {
+        val loc = v.getProperty[Double]("metric--lines-of-code")
+        v.setProperty("metric--contribution", loc)
+        loc
+      }
+    }).iterate()
     graph.vertices.has("kind", "commit").transform(new AsVertex).sideEffect(new GetCommitContribution).iterate()
     graph.vertices.has("kind", "author").transform(new AsVertex).sideEffect(new GetAuthorContribution).iterate()
     graph
   }
 }
 
-class LoggedContributionMetric extends ContributionMetric with LoggedMetric
+class LoggedContributionMetric extends ContributionMetric with LoggedFunction[FullGraph, FullGraph]
+
+class RevisionContributionMetric extends RevisionMetric {
+
+  val logger = Logger(classOf[RevisionContributionMetric].getSimpleName)
+
+  override def apply(g: Graph): Graph = {
+    g.vertices.has("kind", "package").transform(new AsVertex)
+        .sideEffect(new GetAggregatedContribution(Direction.IN, "in-package", "class"))
+        .iterate()
+    g
+  }
+}
+
+class LoggedRevisionContributionMetric extends RevisionContributionMetric with LoggedFunction[Graph, Graph]
 
 private[this] class GetClassContribution extends PipeFunction[Edge, Double] {
   override def compute(e: Edge): Double = {
@@ -38,13 +60,9 @@ private[this] class GetClassContribution extends PipeFunction[Edge, Double] {
 }
 
 private[this] class GetAggregatedContribution(dir: Direction, label: String, kind: String)
-    extends PipeFunction[Vertex, Double] {
-  override final def compute(v: Vertex): Double = {
-    val individuals = v.getVertices(dir, label).toSeq
-        .filter(_.getProperty[String]("kind") == kind)
-    val aggregatedContribution = individuals.map(_.getProperty[Double]("metric--contribution")).sum
-    v.setProperty("metric--contribution", aggregatedContribution)
-    aggregatedContribution
+    extends AggregatingMetricTransformation[Double](dir, label, kind, "contribution") {
+  override final def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
+    pipe.property("metric--contribution").toList.toSeq.asInstanceOf[Seq[Double]].sum
   }
 }
 

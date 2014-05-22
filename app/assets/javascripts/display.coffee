@@ -10,7 +10,7 @@ $ ->
 
     badness = d3.scale.linear().domain([-1, 300]).range(["green", "red"])
     color = (d) ->
-      badness(d["metric--lines-of-code"])
+      badness(d["metric--avg-lines-of-code"])
 
     strength = (link) ->
       switch link.kind
@@ -221,7 +221,7 @@ $ ->
         if ($this.is(":checked") and $this.attr("value") == "black")
           color = "#000000"
         else
-          color = (d) -> badness(d["metric--lines-of-code"])
+          color = (d) -> badness(d["metric--avg-lines-of-code"])
         node.style("fill", color).call(force.drag)
 
       $("""input[name="node-size"]""").on "click", ->

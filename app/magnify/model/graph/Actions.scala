@@ -14,15 +14,17 @@ trait Actions {
 
   def getName(v: Vertex): String = getName(v.getProperty[String]("author"))
 
+  def getRevisionVertices(pipe: GremlinPipeline[Vertex, Vertex]): GremlinPipeline[Vertex, Vertex] =
+    pipe.in("in-revision")
+
+  def getRevisionClasses(pipe: GremlinPipeline[Vertex, Vertex]): GremlinPipeline[Vertex, Vertex] =
+    pipe.has("kind", "class").transform(new AsVertex)
+
   def getRevisionClasses(rev: Vertex): GremlinPipeline[Vertex, Vertex] =
-    getRevisionVertices(rev)
-        .has("kind", "class")
-        .transform(new AsVertex)
+    getRevisionClasses(getRevisionVertices(rev))
 
   def getRevisionVertices(revVertex: Vertex): GremlinPipeline[Vertex, Vertex] =
-    new GremlinPipeline()
-        .start(revVertex)
-        .in("in-revision")
+    getRevisionVertices(new GremlinPipeline().start(revVertex))
 
   def getPackageClasses(pkg: Vertex): GremlinPipeline[Vertex, Vertex] =
     new GremlinPipeline()

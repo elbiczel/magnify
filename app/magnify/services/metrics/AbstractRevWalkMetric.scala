@@ -10,16 +10,16 @@ import com.tinkerpop.pipes.branch.LoopPipe.LoopBundle
 import magnify.features.Metric
 import magnify.model.graph.{Actions, FullGraph, TailCommitFilter}
 
-abstract class AbstractRevWalkMetric[A] extends Metric {
+abstract class AbstractRevWalkMetric[A](transformation: RevisionTransformation[A]) extends Metric {
 
   implicit val pool: ExecutionContext
 
   override def apply(g: FullGraph): FullGraph = {
     g.vertices.filter(TailCommitFilter).transform(transformation).loop(1, HasNextFilter).iterate()
-    g
+    aggregateMetric(g)
   }
 
-  val transformation: RevisionTransformation[A]
+  def aggregateMetric(g: FullGraph): FullGraph = g
 }
 
 trait RevisionTransformation[A] extends PipeFunction[Vertex, Vertex] with Actions {

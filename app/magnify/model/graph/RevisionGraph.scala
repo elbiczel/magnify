@@ -2,13 +2,9 @@ package magnify.model.graph
 
 import scala.collection.JavaConversions._
 
-import com.tinkerpop.blueprints.{Direction, Edge, Graph => BlueprintsGraph, Vertex}
-import com.tinkerpop.blueprints.impls.tg.TinkerGraph
+import com.tinkerpop.blueprints.{Edge, Graph => BlueprintsGraph, Vertex}
 import com.tinkerpop.blueprints.oupls.jung.GraphJung
-import com.tinkerpop.gremlin.java.GremlinPipeline
-import com.tinkerpop.pipes.PipeFunction
 import edu.uci.ics.jung.algorithms.scoring.PageRank
-import play.api.Logger
 
 final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph with Actions {
 
@@ -72,16 +68,6 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
     } {
       val edge = addEdge(pkg, "package-imports", importsPkg._1)
       edge.setProperty("weight", importsPkg._2)
-    }
-  }
-
-  def computePackageLOC(): Unit = {
-    vertices.has("kind", "package").toList.foreach { case pkg: Vertex =>
-      val elems = getPackageClasses(pkg)
-          .property("metric--lines-of-code")
-          .toList.toSeq.asInstanceOf[Seq[Double]]
-      val avg = Option(elems).filter(_.size > 0).map(_.sum / elems.size)
-      pkg.setProperty("metric--lines-of-code", avg.getOrElse(0.0))
     }
   }
 }

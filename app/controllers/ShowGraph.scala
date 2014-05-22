@@ -110,7 +110,7 @@ sealed class ShowGraph (
       val name = vertex.getProperty("name").toString
       val kind = vertex.getProperty("kind").toString
       val pageRank = Option(vertex.getProperty[String]("page-rank")).getOrElse("")
-      Map("name" -> name, "kind" -> kind, "page-rank" -> pageRank) ++ property(vertex, "metric--lines-of-code")
+      Map("name" -> name, "kind" -> kind, "page-rank" -> pageRank) ++ property(vertex, "metric--avg-lines-of-code")
     }
 
   private def property(v: Element, name: String): Map[String, String] =
