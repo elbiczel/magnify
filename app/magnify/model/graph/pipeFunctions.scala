@@ -1,5 +1,7 @@
 package magnify.model.graph
 
+import scala.collection.JavaConversions._
+
 import java.lang
 
 import com.tinkerpop.blueprints.{Direction, Edge, Element, Vertex}
@@ -64,4 +66,9 @@ class AsVertex[T <: Element] extends PipeFunction[T, Vertex] {
 
 class AsEdge[T <: Element] extends PipeFunction[T, Edge] {
   override def compute(argument: T): Edge = argument.asInstanceOf[Edge]
+}
+
+class HasVertexToFilter(dir: Direction, label: String, vertices: Set[Vertex])
+    extends PipeFunction[Vertex, lang.Boolean] {
+  override def compute(v: Vertex): lang.Boolean = v.getVertices(dir, label).iterator().toSet.exists(vertices)
 }

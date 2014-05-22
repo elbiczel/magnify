@@ -1,19 +1,22 @@
 package controllers
 
+import scala.collection.JavaConversions._
 
-import magnify.model.graph.FullGraph
+import magnify.model.graph.{HasVertexToFilter, AsVertex, Actions, FullGraph}
+import com.tinkerpop.blueprints.Direction
 
-object Committers {
+object Committers extends Actions {
   def apply(revision: Option[String], graph: FullGraph): Set[Map[String, String]] = {
-    val commits = graph.commitsOlderThan(revision)
-    commits.map((vrtx) => {
-      val authorWithTime = vrtx.getProperty[String]("author")
-      Map("name" -> getName(authorWithTime))
-    }).toSet
-  }
-
-  def getName(authorWithTime: String): String = {
-    val endEmailIndex = authorWithTime.lastIndexOf('<')
-    authorWithTime.substring(0, endEmailIndex - 1)
+    val commits = graph.commitsOlderThan(revision).toSet
+    graph
+        .vertices
+        .has("kind", "author")
+        .transform(new AsVertex)
+        .filter(new HasVertexToFilter(Direction.OUT, "committed", commits))
+        .property("name")
+        .dedup()
+        .toList
+        .toSet
+        .map((id: AnyRef) => Map("name" -> id.asInstanceOf[String]))
   }
 }

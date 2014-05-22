@@ -3,44 +3,52 @@ package magnify.services.metrics
 
 import scala.collection.JavaConversions._
 
-import com.tinkerpop.blueprints.{Direction, Edge}
+import com.tinkerpop.blueprints.{Direction, Edge, Vertex}
 import com.tinkerpop.pipes.PipeFunction
 import magnify.features.{LoggedMetric, Metric}
-import magnify.model.graph.{AsEdge, FullGraph}
+import magnify.model.graph.{AsEdge, AsVertex, FullGraph}
 import play.api.Logger
-import com.tinkerpop.pipes.sideeffect.GroupByReducePipe
 
 class ContributionMetric extends Metric {
 
   val logger = Logger(classOf[ContributionMetric].getSimpleName)
 
   override def apply(graph: FullGraph): FullGraph = {
-    val groupAndReduceByPipe = new GroupByReducePipe[Edge, String, Long, Long](
-      new GetRev, new GetClassContribution, new AggregateContributions)
-    graph.edges.has("label", "commit").transform(new AsEdge).add(groupAndReduceByPipe).iterate()
+    graph.edges.has("label", "commit").transform(new AsEdge).sideEffect(new GetClassContribution).iterate()
+    graph.vertices.has("kind", "commit").transform(new AsVertex).sideEffect(new GetCommitContribution).iterate()
+    graph.vertices.has("kind", "author").transform(new AsVertex).sideEffect(new GetAuthorContribution).iterate()
     graph
   }
 }
 
 class LoggedContributionMetric extends ContributionMetric with LoggedMetric
 
-private[this] class AggregateContributions extends PipeFunction[java.util.Iterator[Long], Long] {
-  override def compute(list: java.util.Iterator[Long]): Long = list.toSeq.sum
-}
-
-private[this] class GetRev extends PipeFunction[Edge, String] {
-  override def compute(e: Edge): String = e.getProperty[String]("rev")
-}
-
-private[this] class GetClassContribution extends PipeFunction[Edge, Long] {
-  override def compute(e: Edge): Long = {
+private[this] class GetClassContribution extends PipeFunction[Edge, Double] {
+  override def compute(e: Edge): Double = {
     val newV = e.getVertex(Direction.IN)
     val oldV = e.getVertex(Direction.OUT)
-    if (oldV.getProperty[String]("kind") != "class") { 0L } else {
+    if (oldV.getProperty[String]("kind") != "class") { 0.0 } else {
       val newLOC = newV.getProperty[Double]("metric--lines-of-code")
       val oldLOC = oldV.getProperty[Double]("metric--lines-of-code")
-      Math.abs(newLOC - oldLOC).toLong
+      val contribution = Math.abs(newLOC - oldLOC)
+      newV.setProperty("metric--contribution", contribution)
+      contribution
     }
   }
 }
+
+private[this] class GetAggregatedContribution(dir: Direction, label: String, kind: String)
+    extends PipeFunction[Vertex, Double] {
+  override final def compute(v: Vertex): Double = {
+    val individuals = v.getVertices(dir, label).toSeq
+        .filter(_.getProperty[String]("kind") == kind)
+    val aggregatedContribution = individuals.map(_.getProperty[Double]("metric--contribution")).sum
+    v.setProperty("metric--contribution", aggregatedContribution)
+    aggregatedContribution
+  }
+}
+
+private[this] class GetCommitContribution extends GetAggregatedContribution(Direction.IN, "in-revision", "class")
+
+private[this] class GetAuthorContribution extends GetAggregatedContribution(Direction.OUT, "committed", "commit")
 

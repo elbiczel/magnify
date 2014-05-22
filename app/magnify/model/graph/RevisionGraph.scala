@@ -1,6 +1,5 @@
 package magnify.model.graph
 
-import scala.collection.mutable
 import scala.collection.JavaConversions._
 
 import com.tinkerpop.blueprints.{Direction, Edge, Graph => BlueprintsGraph, Vertex}
@@ -11,7 +10,7 @@ import com.tinkerpop.pipes.PipeFunction
 import edu.uci.ics.jung.algorithms.scoring.PageRank
 import play.api.Logger
 
-final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph {
+final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph with Actions {
 
   private def addPackages(): Unit = {
     val classVertices = vertices.has("kind", "class").toList.toSeq.asInstanceOf[Seq[Vertex]]
@@ -63,35 +62,31 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph {
   private def addPackageImports(): Unit = {
     for {
       pkg <- vertices
-          .has("kind", "class")
-          .out("in-package")
+          .has("kind", "package")
+          .transform(new AsVertex)
           .toList.toSet[Vertex]
-      importsPkg <- new GremlinPipeline()
-          .start(pkg)
-          .in("in-package")
+      importsPkg <- getPackageClasses(pkg)
           .out("imports")
           .out("in-package")
-          .toList.toSet[Vertex]
+          .toList.toSeq.groupBy((v) => v).mapValues((seq) => seq.length)
     } {
-      addEdge(pkg, "package-imports", importsPkg)
+      val edge = addEdge(pkg, "package-imports", importsPkg._1)
+      edge.setProperty("weight", importsPkg._2)
     }
   }
 
   private def computePackageLOC(): Unit = {
     vertices.has("kind", "package").toList.foreach { case pkg: Vertex =>
-      val elems = new GremlinPipeline()
-          .start(pkg)
-          .in("in-package")
-          .has("kind", "class")
+      val elems = getPackageClasses(pkg)
           .property("metric--lines-of-code")
-          .toList.toSeq.asInstanceOf[mutable.Seq[Double]]
+          .toList.toSeq.asInstanceOf[Seq[Double]]
       val avg = Option(elems).filter(_.size > 0).map(_.sum / elems.size)
       pkg.setProperty("metric--lines-of-code", avg.getOrElse(0.0))
     }
   }
 }
 
-object RevisionGraph {
+object RevisionGraph extends Actions {
 
   private val logger = Logger(classOf[RevisionGraph].getSimpleName)
 
@@ -103,7 +98,7 @@ object RevisionGraph {
     revVertices(revVertex).sideEffect(new PipeFunction[Vertex, Vertex] {
       override def compute(argument: Vertex): Vertex = {
         val copy = tinker.addVertex(argument.getId)
-        argument.getPropertyKeys.foreach((key) => copy.setProperty(key, argument.getProperty(key)))
+        copyProperties(argument, copy)
         argument
       }
     }).iterate()
@@ -116,7 +111,7 @@ object RevisionGraph {
           oOutCopy match {
             case Some(outCopy) => {
               val copyEdge = copy.addEdge(outEdge.getLabel, outCopy)
-              outEdge.getPropertyKeys.foreach((key) => copyEdge.setProperty(key, outEdge.getProperty(key)))
+              copyProperties(outEdge, copyEdge)
             }
             case None => ()
           }
@@ -124,6 +119,7 @@ object RevisionGraph {
         argument
       }
     }).iterate()
+    // TODO(Biczel): Add aggregated metrics
     val revGraph = new RevisionGraph(tinker)
     logger.info("Subgraph creation finished: " + System.nanoTime())
     logger.info("Adding packages starts: " + System.nanoTime())

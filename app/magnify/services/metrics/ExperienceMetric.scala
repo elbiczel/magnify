@@ -21,7 +21,7 @@ class LoggedExperienceMetric(
 
 private[this] object ExperienceTransformation extends RevisionTransformation[Map[String, Long]] {
   override def metric(revision: Vertex, current: Vertex, oParent: Option[Vertex]): Map[String, Long] = {
-    val authorId = getName(revision.getProperty[String]("author"))
+    val authorId = getName(revision)
     val prevExperience: Map[String, Long] = oParent
         .map(_.getProperty[Map[String, Long]]("metric--exp"))
         .getOrElse(Map())

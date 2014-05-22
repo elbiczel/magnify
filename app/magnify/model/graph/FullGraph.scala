@@ -1,5 +1,6 @@
 package magnify.model.graph
 
+
 import java.io.{BufferedOutputStream, FileOutputStream}
 
 import scala.collection.JavaConversions._
@@ -18,7 +19,8 @@ final class FullGraph(
     override val graph: BlueprintsGraph,
     archive: VersionedArchive,
     private[this] var headVertex: Vertex)
-  extends Graph {
+  extends Graph
+  with Actions {
 
   def this(graph: BlueprintsGraph, archive: VersionedArchive) = this(graph, archive, null)
 
@@ -59,8 +61,7 @@ final class FullGraph(
 
   private def revVertex(rev: Option[String]): Vertex = {
     rev.flatMap { (revId) =>
-      val commitVertices = vertices.has("kind", "commit").has("name", revId).toList
-      if (commitVertices.size() == 1) { Some(commitVertices.get(0).asInstanceOf[Vertex]) } else { None }
+      vertices.has("kind", "commit").has("name", revId).toList.headOption.asInstanceOf[Option[Vertex]]
     }.getOrElse(headVertex)
   }
 
@@ -112,6 +113,15 @@ final class FullGraph(
             v
           }
         }).iterate()
+    val authorId = getName(revVertex)
+    val authorVertex = vertices
+        .has("kind", "author")
+        .has("name", authorId)
+        .transform(new AsVertex)
+        .toList.headOption.getOrElse {
+          addVertex("author", authorId)
+        }
+    addEdge(authorVertex, "committed", revVertex)
     parentRevVertex = Some(revVertex)
     headVertex = revVertex
   }
