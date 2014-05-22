@@ -1,9 +1,11 @@
 package magnify.model.graph
 
+import scala.collection.JavaConversions._
+
 import com.tinkerpop.blueprints.{Edge, Vertex}
 import com.tinkerpop.gremlin.pipes.filter.{LabelFilterPipe, PropertyFilterPipe}
 import com.tinkerpop.pipes.filter.FilterPipe.Filter
-import scala.collection.JavaConversions._
+import magnify.features.RevisionGraphFactory
 
 /**
  * @author Cezary Bartoszuk (cezary@codilime.com)
@@ -27,8 +29,9 @@ final class PackagesGraphView(graph: Graph) extends GraphView {
     new LabelFilterPipe("in-package", Filter.EQUAL)
 }
 
-object PackagesGraphView {
+final class PackagesGraphViewFactory(revisionGraphFactory: RevisionGraphFactory) extends GraphViewFactory {
+
   def apply(graph: FullGraph, revision: Option[String]): PackagesGraphView = {
-    new PackagesGraphView(graph.forRevision(revision))
+    new PackagesGraphView(revisionGraphFactory(graph, revision))
   }
 }

@@ -1,10 +1,12 @@
 package magnify.model.graph
 
-import com.tinkerpop.blueprints.{Edge, Vertex}
 import scala.collection.JavaConversions._
+
+import com.tinkerpop.blueprints.{Edge, Vertex}
 import com.tinkerpop.gremlin.pipes.filter.{LabelFilterPipe, PropertyFilterPipe}
-import com.tinkerpop.pipes.filter.FilterPipe.Filter
 import com.tinkerpop.pipes.filter.OrFilterPipe
+import com.tinkerpop.pipes.filter.FilterPipe.Filter
+import magnify.features.RevisionGraphFactory
 
 /**
  * @author Cezary Bartoszuk (cezary@codilime.com)
@@ -31,9 +33,10 @@ final class CustomGraphView (graph: Graph) extends GraphView {
       new LabelFilterPipe("calls", Filter.EQUAL))
 }
 
-object CustomGraphView {
+final class CustomGraphViewFactory(revisionGraphFactory: RevisionGraphFactory)
+    extends GraphViewFactory {
 
   def apply(graph: FullGraph, revision: Option[String]): CustomGraphView = {
-    new CustomGraphView(graph.forRevision(revision))
+    new CustomGraphView(revisionGraphFactory(graph, revision))
   }
 }

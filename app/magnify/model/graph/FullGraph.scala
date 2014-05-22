@@ -34,13 +34,6 @@ final class FullGraph(
 
   private var parentRevVertex: Option[Vertex] = None
 
-  private val versions: LoadingCache[Option[String], Graph] = CacheBuilder.newBuilder()
-      .maximumSize(100)
-      .softValues()
-      .build(new CacheLoader[Option[String], Graph] {
-        override def load(key: Option[String]): Graph = RevisionGraph(FullGraph.this, revVertex(key))
-     })
-
   def save(fileName: String): Unit = {
     val os = new BufferedOutputStream(new FileOutputStream(fileName + ".gml"))
     GraphMLWriter.outputGraph(graph, os)
@@ -48,8 +41,6 @@ final class FullGraph(
     os.close()
     archive.save(fileName + ".archive")
   }
-
-  def forRevision(rev: Option[String] = None): Graph = versions.get(rev)
 
   def getSource(v: Vertex): String = {
     if (v.getPropertyKeys.contains("source-code")) {
@@ -59,7 +50,7 @@ final class FullGraph(
     }
   }
 
-  private def revVertex(rev: Option[String]): Vertex = {
+  def revVertex(rev: Option[String]): Vertex = {
     rev.flatMap { (revId) =>
       vertices.has("kind", "commit").has("name", revId).toList.headOption.asInstanceOf[Option[Vertex]]
     }.getOrElse(headVertex)

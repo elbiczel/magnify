@@ -1,5 +1,7 @@
 package controllers
 
+import scala.collection.JavaConversions._
+
 import com.tinkerpop.blueprints.{Graph => _, _}
 import com.tinkerpop.blueprints.Direction._
 import magnify.features.Sources
@@ -9,10 +11,17 @@ import play.api.libs.json._
 import play.api.libs.json.Json._
 import play.api.libs.json.Writes._
 import play.api.mvc._
+import com.google.inject.TypeLiteral
 
-object ShowGraph extends ShowGraph(inject[Sources])
+object ShowGraph extends ShowGraph(
+    inject[Sources],
+    inject[java.util.Map[Class[_ <: GraphView], GraphViewFactory]](
+      new TypeLiteral[java.util.Map[Class[_ <: GraphView], GraphViewFactory]]() {}).toMap)
 
-sealed class ShowGraph (protected override val sources: Sources) extends Controller with ProjectList {
+sealed class ShowGraph (
+    protected override val sources: Sources,
+    graphViewFactories: Map[Class[_ <: GraphView], GraphViewFactory])
+  extends Controller with ProjectList {
 
   def show[A](name: String) = Action { implicit request =>
     if (sources.list.contains(name)) {
@@ -35,25 +44,29 @@ sealed class ShowGraph (protected override val sources: Sources) extends Control
 
   def showCustomJson(name: String) = Action { implicit request =>
     withGraph(name) { graph =>
-      Ok(json(CustomGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
+        val factory = graphViewFactories(classOf[CustomGraphView])
+        Ok(json(factory(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
     }
   }
 
   def showPackagesJson(name: String) = Action { implicit request =>
     withGraph(name) { graph =>
-      Ok(json(PackagesGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
+      val factory = graphViewFactories(classOf[PackagesGraphView])
+      Ok(json(factory(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
     }
   }
 
   def showPkgImportsJson(name: String) = Action { implicit request =>
     withGraph(name) { graph =>
-      Ok(json(PackageImportsGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
+      val factory = graphViewFactories(classOf[PackageImportsGraphView])
+      Ok(json(factory(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
     }
   }
 
   def showClsImportsJson(name: String) = Action { implicit request =>
     withGraph(name) { graph =>
-      Ok(json(ClassImportsGraphView(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
+      val factory = graphViewFactories(classOf[ClassImportsGraphView])
+      Ok(json(factory(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
     }
   }
 

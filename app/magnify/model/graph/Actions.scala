@@ -7,8 +7,6 @@ import com.tinkerpop.gremlin.java.GremlinPipeline
 
 trait Actions {
 
-
-
   def getName(authorWithTime: String): String = {
     val endEmailIndex = authorWithTime.lastIndexOf('<')
     authorWithTime.substring(0, endEmailIndex - 1)
@@ -17,11 +15,14 @@ trait Actions {
   def getName(v: Vertex): String = getName(v.getProperty[String]("author"))
 
   def getRevisionClasses(rev: Vertex): GremlinPipeline[Vertex, Vertex] =
-    new GremlinPipeline()
-        .start(rev)
-        .in("in-revision")
+    getRevisionVertices(rev)
         .has("kind", "class")
         .transform(new AsVertex)
+
+  def getRevisionVertices(revVertex: Vertex): GremlinPipeline[Vertex, Vertex] =
+    new GremlinPipeline()
+        .start(revVertex)
+        .in("in-revision")
 
   def getPackageClasses(pkg: Vertex): GremlinPipeline[Vertex, Vertex] =
     new GremlinPipeline()

@@ -17,6 +17,7 @@ final class Features extends AbstractModule {
     requireBinding(classOf[Imports])
     requireBinding(classOf[Parser])
     requireBinding(classOf[FullGraphFactory])
+    requireBinding(classOf[RevisionGraphFactory])
     bind(classOf[ExecutionContext])
         .annotatedWith(Names.named("UiPool"))
         .toInstance(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))

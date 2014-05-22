@@ -9,11 +9,13 @@ import com.google.inject.name.Named
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph
 import com.tinkerpop.blueprints.util.io.graphml.GraphMLReader
 import com.tinkerpop.gremlin.java.GremlinPipeline
-import magnify.features.FullGraphFactory
+import magnify.features.{FullGraphFactory, RevisionGraphFactory}
 import magnify.model.VersionedArchive
 import magnify.model.graph.{FullGraph, HeadCommitFilter}
 
-class FullGraphFactoryImpl(@Named("ServicesPool") implicit val pool: ExecutionContext) extends FullGraphFactory {
+class FullGraphFactoryImpl(
+    @Named("ServicesPool") implicit val pool: ExecutionContext,
+    revisionGraphFactory: RevisionGraphFactory) extends FullGraphFactory {
   implicit def gremlinPipelineAsScalaIterable[S, E](pipe: GremlinPipeline[S, E]): Iterable[E] =
     collectionAsScalaIterable(pipe.toList)
 
@@ -30,7 +32,7 @@ class FullGraphFactoryImpl(@Named("ServicesPool") implicit val pool: ExecutionCo
         .head
     val graph = new FullGraph(tinker, archive, headCommitV)
     Future {
-      graph.forRevision()
+      revisionGraphFactory(graph)
     }
     graph
   }

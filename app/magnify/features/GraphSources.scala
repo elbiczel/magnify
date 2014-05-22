@@ -20,7 +20,8 @@ import play.api.Logger
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
  */
 private[features] final class GraphSources(
-    parse: Parser, imports: Imports, metrics: util.Set[Metric], graphFactory: FullGraphFactory,
+    parse: Parser, imports: Imports, metrics: util.Set[Metric],
+    graphFactory: FullGraphFactory, revisionGraphFactory: RevisionGraphFactory,
     @Named("ServicesPool") implicit val pool: ExecutionContext) extends Sources {
 
   private val logger = Logger(classOf[GraphSources].getSimpleName)
@@ -85,7 +86,7 @@ private[features] final class GraphSources(
     logger.info("Metrics analysis finished: " + name + " : " + System.nanoTime())
     Future {
       // generate head graph
-      graphWithMetrics.forRevision()
+      revisionGraphFactory(graphWithMetrics)
       graphWithMetrics.save(graphsDir + name)
     }.recover {
       case t: Throwable => {
@@ -230,8 +231,8 @@ private[features] final class GraphSources(
       val calls = runtime.groupBy {case (a, b, _) => (a, b)}.mapValues(s => s.map(_._3).sum)
       for {
         ((fromPackage, toPackage), count) <- calls
-        from <- graph.forRevision().vertices.has("kind", "package").has("name", fromPackage).toList
-        to <- graph.forRevision().vertices.has("kind", "package").has("name", toPackage).toList
+        from <- graph.currentVertices.has("kind", "package").has("name", fromPackage).toList
+        to <- graph.currentVertices.has("kind", "package").has("name", toPackage).toList
       } {
         val e = graph.addEdge(from.asInstanceOf[Vertex], "calls", to.asInstanceOf[Vertex])
         e.setProperty("count", count.toString)
