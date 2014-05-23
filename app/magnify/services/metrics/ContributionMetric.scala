@@ -19,7 +19,7 @@ class ContributionMetric extends Metric with Actions {
     getRevisionClasses(graph.getTailCommitVertex).sideEffect(new PipeFunction[Vertex, Double] {
       override def compute(v: Vertex): Double = {
         val loc = getMetricValue[Double]("lines-of-code", v)
-        setMetricValue("contribution", v, loc)
+        setMetricValue("contribution", v, loc + 5)
         loc
       }
     }).iterate()
@@ -52,7 +52,7 @@ private[this] class GetClassContribution extends PipeFunction[Edge, Double] with
     if (oldV.getProperty[String]("kind") != "class") { 0.0 } else {
       val newLOC = getMetricValue[Double]("lines-of-code", newV)
       val oldLOC = getMetricValue[Double]("lines-of-code", oldV)
-      val contribution = Math.abs(newLOC - oldLOC) + 1
+      val contribution = Math.abs(newLOC - oldLOC) + 2
       setMetricValue("contribution", newV, contribution)
       contribution
     }
@@ -62,7 +62,7 @@ private[this] class GetClassContribution extends PipeFunction[Edge, Double] with
 private[this] class GetAggregatedContribution(dir: Direction, label: String, kind: String)
     extends AggregatingMetricTransformation[Double](dir, label, kind, "contribution") {
   override final def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
-    pipe.toList.toSeq.map(getMetricValue[Double]("contribution", _)).sum
+    pipe.toList.toSeq.map(getMetricValue[Double](metricName, _)).sum
   }
 }
 
