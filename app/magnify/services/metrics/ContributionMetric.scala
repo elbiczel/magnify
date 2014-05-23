@@ -6,11 +6,11 @@ import scala.collection.JavaConversions._
 import com.tinkerpop.blueprints.{Direction, Edge, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import com.tinkerpop.pipes.PipeFunction
-import magnify.features.{LoggedFunction, Metric, RevisionMetric}
+import magnify.features.{FullGraphMetric, LoggedFunction, MetricNames, RevisionMetric}
 import magnify.model.graph._
 import play.api.Logger
 
-class ContributionMetric extends Metric with Actions {
+class ContributionMetric extends FullGraphMetric with Actions {
 
   val logger = Logger(classOf[ContributionMetric].getSimpleName)
 
@@ -18,7 +18,7 @@ class ContributionMetric extends Metric with Actions {
     graph.edges.has("label", "commit").transform(new AsEdge).sideEffect(new GetClassContribution).iterate()
     getRevisionClasses(graph.getTailCommitVertex).sideEffect(new PipeFunction[Vertex, Double] {
       override def compute(v: Vertex): Double = {
-        val loc = getMetricValue[Double]("lines-of-code", v)
+        val loc = getMetricValue[Double](MetricNames.linesOfCode, v)
         setMetricValue("contribution", v, loc + 5)
         loc
       }
@@ -27,6 +27,10 @@ class ContributionMetric extends Metric with Actions {
     graph.vertices.has("kind", "author").transform(new AsVertex).sideEffect(new GetAuthorContribution).iterate()
     graph
   }
+
+  override final val name: String = MetricNames.contribution
+
+  override final val dependencies: Set[String] = Set(MetricNames.linesOfCode)
 }
 
 class LoggedContributionMetric extends ContributionMetric with LoggedFunction[FullGraph, FullGraph]
@@ -41,6 +45,8 @@ class RevisionContributionMetric extends RevisionMetric {
         .iterate()
     g
   }
+
+  override final val name: String = MetricNames.contribution
 }
 
 class LoggedRevisionContributionMetric extends RevisionContributionMetric with LoggedFunction[Graph, Graph]
@@ -50,17 +56,17 @@ private[this] class GetClassContribution extends PipeFunction[Edge, Double] with
     val newV = e.getVertex(Direction.IN)
     val oldV = e.getVertex(Direction.OUT)
     if (oldV.getProperty[String]("kind") != "class") { 0.0 } else {
-      val newLOC = getMetricValue[Double]("lines-of-code", newV)
-      val oldLOC = getMetricValue[Double]("lines-of-code", oldV)
+      val newLOC = getMetricValue[Double](MetricNames.linesOfCode, newV)
+      val oldLOC = getMetricValue[Double](MetricNames.linesOfCode, oldV)
       val contribution = Math.abs(newLOC - oldLOC) + 2
-      setMetricValue("contribution", newV, contribution)
+      setMetricValue(MetricNames.contribution, newV, contribution)
       contribution
     }
   }
 }
 
 private[this] class GetAggregatedContribution(dir: Direction, label: String, kind: String)
-    extends AggregatingMetricTransformation[Double](dir, label, kind, "contribution") {
+    extends AggregatingMetricTransformation[Double](dir, label, kind, MetricNames.contribution) {
   override final def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
     pipe.toList.toSeq.map(getMetricValue[Double](metricName, _)).sum
   }
@@ -69,4 +75,3 @@ private[this] class GetAggregatedContribution(dir: Direction, label: String, kin
 private[this] class GetCommitContribution extends GetAggregatedContribution(Direction.IN, "in-revision", "class")
 
 private[this] class GetAuthorContribution extends GetAggregatedContribution(Direction.OUT, "committed", "commit")
-

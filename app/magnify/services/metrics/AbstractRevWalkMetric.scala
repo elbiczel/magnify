@@ -4,18 +4,18 @@ import java.lang
 
 import scala.concurrent.ExecutionContext
 
-import com.tinkerpop.blueprints.{Element, Vertex}
+import com.tinkerpop.blueprints.Vertex
 import com.tinkerpop.pipes.PipeFunction
 import com.tinkerpop.pipes.branch.LoopPipe.LoopBundle
-import magnify.features.Metric
+import magnify.features.FullGraphMetric
 import magnify.model.graph.{Actions, FullGraph, TailCommitFilter}
 
-abstract class AbstractRevWalkMetric[A](transformation: RevisionTransformation[A]) extends Metric {
+abstract class AbstractRevWalkMetric[A](transformation: RevisionTransformation[A]) extends FullGraphMetric {
 
   implicit val pool: ExecutionContext
 
   override def apply(g: FullGraph): FullGraph = {
-    g.vertices.filter(TailCommitFilter).transform(transformation).loop(1, HasNextFilter).iterate()
+    g.vertices.filter(TailCommitFilter).transform(transformation.withName(name)).loop(1, HasNextFilter).iterate()
     aggregateMetric(g)
   }
 
@@ -23,6 +23,13 @@ abstract class AbstractRevWalkMetric[A](transformation: RevisionTransformation[A
 }
 
 trait RevisionTransformation[A] extends PipeFunction[Vertex, Vertex] with Actions {
+
+  final var metricName: String = ""
+
+  final def withName(name: String): RevisionTransformation[A] = {
+    metricName = name
+    this
+  }
 
   override final def compute(v: Vertex): Vertex = {
     getRevisionClasses(v).sideEffect(calculateClassMetric(v)).iterate()
@@ -46,8 +53,6 @@ trait RevisionTransformation[A] extends PipeFunction[Vertex, Vertex] with Action
     }
 
   def metric(revision: Vertex, current: Vertex, oParent: Option[Vertex]): A
-
-  def metricName: String
 }
 
 private[this] object HasNextFilter extends PipeFunction[LoopBundle[Vertex], lang.Boolean] {

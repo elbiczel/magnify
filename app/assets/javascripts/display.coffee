@@ -10,7 +10,7 @@ $ ->
 
     badness = d3.scale.linear().domain([-1, 300]).range(["green", "red"])
     color = (d) ->
-      badness(d["metric--avg-lines-of-code"])
+      badness(d["metric--avg-loc"])
 
     strength = (link) ->
       switch link.kind
@@ -82,7 +82,7 @@ $ ->
         .enter()
         .append("circle")
         .attr("class", "node")
-        .attr("r", (d) -> 3 + Math.max(3, 100.0 * d["page-rank"]))
+        .attr("r", (d) -> 3 + Math.max(3, 100.0 * d["metric--pr"]))
         .style("fill", color)
         .call(force.drag)
 
@@ -221,7 +221,7 @@ $ ->
         if ($this.is(":checked") and $this.attr("value") == "black")
           color = "#000000"
         else
-          color = (d) -> badness(d["metric--avg-lines-of-code"])
+          color = (d) -> badness(d["metric--avg-loc"])
         node.style("fill", color).call(force.drag)
 
       $("""input[name="node-size"]""").on "click", ->
@@ -229,7 +229,7 @@ $ ->
         if ($this.is(":checked") and $this.attr("value") == "constant")
           size = 5
         else
-          size = (d) -> 3 + Math.max(3, 100.0 * d["page-rank"])
+          size = (d) -> 3 + Math.max(3, 100.0 * d["metric--pr"])
         node.attr("r", size).call(force.drag)
 
       node

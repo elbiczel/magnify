@@ -4,11 +4,11 @@ import scala.collection.JavaConversions._
 
 import com.tinkerpop.blueprints.{Direction, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
-import magnify.features.{LoggedFunction, Metric, RevisionMetric}
+import magnify.features.{FullGraphMetric, LoggedFunction, MetricNames, RevisionMetric}
 import magnify.model.graph.{Actions, AsVertex, FullGraph, Graph}
 import play.api.Logger
 
-class McCabeCyclomaticComplexityMetric extends Metric with Actions {
+class McCabeCyclomaticComplexityMetric extends FullGraphMetric with Actions {
 
   val logger = Logger(classOf[McCabeCyclomaticComplexityMetric].getSimpleName)
 
@@ -18,6 +18,10 @@ class McCabeCyclomaticComplexityMetric extends Metric with Actions {
         .iterate()
     graph
   }
+
+  override final val name: String = MetricNames.mcCabeCyclomaticComplexity
+
+  override final val dependencies: Set[String] = Set(MetricNames.linesOfCode)
 }
 
 class LoggedMcCabeCyclomaticComplexityMetric
@@ -34,13 +38,18 @@ class RevisionMcCabeCyclomaticComplexityMetric extends RevisionMetric {
         .iterate()
     graph
   }
+
+  override final val name: String = MetricNames.mcCabeCyclomaticComplexity
+
+  override final val dependencies: Set[String] = Set(MetricNames.linesOfCode, MetricNames.pageRank)
 }
 
 class LoggedRevisionMcCabeCyclomaticComplexityMetric
     extends RevisionMcCabeCyclomaticComplexityMetric with LoggedFunction[Graph, Graph]
 
 private[this] class AggregateMcCabeComplexityMetric(dir: Direction, label: String, kind: String)
-    extends AggregatingMetricTransformation[Double](dir, label, kind, "mcCabeCC") {
+    extends AggregatingMetricTransformation[Double](
+      dir, label, kind, MetricNames.mcCabeCyclomaticComplexity) {
 
   override def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
     val classes = pipe.toList.toSeq
@@ -51,9 +60,9 @@ private[this] class AggregateMcCabeComplexityMetric(dir: Direction, label: Strin
   }
 
   private def getWeights(classes: Seq[Vertex]): Seq[Double] =
-    if (classes.forall(_.getPropertyKeys.contains("page-rank"))) {
-      classes.map(_.getProperty[String]("page-rank").toDouble)
+    if (classes.forall(_.getPropertyKeys.contains(MetricNames.propertyName(MetricNames.pageRank)))) {
+      classes.map(_.getProperty[String](MetricNames.propertyName(MetricNames.pageRank)).toDouble)
     } else {
-      classes.map(getMetricValue[Double]("lines-of-code", _))
+      classes.map(getMetricValue[Double](MetricNames.propertyName(MetricNames.linesOfCode), _))
     }
 }

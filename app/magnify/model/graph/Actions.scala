@@ -4,6 +4,7 @@ import scala.collection.JavaConversions._
 
 import com.tinkerpop.blueprints.{Direction, Edge, Element, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
+import magnify.features.MetricNames
 
 trait Actions {
 
@@ -48,5 +49,5 @@ trait Actions {
   final def getMetricValue[A](metricName: String, e: Element): A = e.getProperty[A]("metric--" + metricName)
 
   final def setMetricValue[A](metricName: String, e: Element, value: A): Unit =
-    e.setProperty("metric--" + metricName, value)
+    e.setProperty(MetricNames.propertyName(metricName), value)
 }

@@ -1,6 +1,5 @@
 package magnify.features
 
-import java.util
 import java.io._
 
 import scala.collection.mutable
@@ -20,7 +19,7 @@ import play.api.Logger
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
  */
 private[features] final class GraphSources(
-    parse: Parser, imports: Imports, metrics: util.Set[Metric],
+    parse: Parser, imports: Imports, metrics: MetricsProvider[FullGraph, FullGraph, FullGraphMetric],
     graphFactory: FullGraphFactory, revisionGraphFactory: RevisionGraphFactory,
     @Named("ServicesPool") implicit val pool: ExecutionContext) extends Sources with Actions {
 
@@ -80,7 +79,7 @@ private[features] final class GraphSources(
     }
     logger.info("Revision analysis finished: " + name + " : " + System.nanoTime())
     logger.info("Metrics analysis starts: " + name + " : " + System.nanoTime())
-    val graphWithMetrics = metrics.foldLeft(graph) { case (graph, metric) =>
+    val graphWithMetrics = metrics().foldLeft(graph) { case (graph, metric) =>
       metric(graph)
     }
     logger.info("Metrics analysis finished: " + name + " : " + System.nanoTime())
@@ -175,7 +174,7 @@ private[features] final class GraphSources(
         setMetricValue(name, cls, value)
       }
       val linesOfCode = parsedFile.content.count(_ == '\n')
-      setMetricValue("lines-of-code", cls, linesOfCode.toDouble)
+      setMetricValue(MetricNames.linesOfCode, cls, linesOfCode.toDouble)
       cls
   }
 

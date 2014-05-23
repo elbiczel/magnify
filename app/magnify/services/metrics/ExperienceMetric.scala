@@ -6,7 +6,7 @@ import scala.concurrent.ExecutionContext
 import com.google.inject.name.Named
 import com.tinkerpop.blueprints.{Direction, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
-import magnify.features.{LoggedFunction, RevisionMetric}
+import magnify.features.{LoggedFunction, MetricNames, RevisionMetric}
 import magnify.model.graph.{AsVertex, FullGraph, Graph}
 import play.api.Logger
 
@@ -20,6 +20,10 @@ abstract class ExperienceMetric extends AbstractRevWalkMetric[Map[String, Double
         .iterate()
     g
   }
+
+  override final val name: String = MetricNames.experience
+
+  override final val dependencies: Set[String] = Set(MetricNames.linesOfCode)
 }
 
 class LoggedExperienceMetric(@Named("ServicesPool") implicit override val pool: ExecutionContext)
@@ -35,17 +39,21 @@ class RevisionExperienceMetric extends RevisionMetric {
           .iterate()
     graph
   }
+
+  override final val name: String = MetricNames.experience
+
+  override final val dependencies: Set[String] = Set(MetricNames.linesOfCode)
 }
 
 class LoggedRevisionExperienceMetric extends RevisionExperienceMetric with LoggedFunction[Graph, Graph]
 
 private[this] class GetAggregatedExperience(dir: Direction, label: String, kind: String)
-    extends AggregatingMetricTransformation[Map[String, Double]](dir, label, kind, "exp") {
+    extends AggregatingMetricTransformation[Map[String, Double]](dir, label, kind, MetricNames.experience) {
 
   override final def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Map[String, Double] = {
     val individuals = pipe.toList.toSeq
     val weightMetricPairs = individuals.map((v) => (
-        getMetricValue[Double]("lines-of-code", v) -> getMetricValue[Map[String, Double]](metricName, v)))
+        getMetricValue[Double](MetricNames.linesOfCode, v) -> getMetricValue[Map[String, Double]](metricName, v)))
     val weightSum = weightMetricPairs.map(_._1).sum
     val weightedExps = weightMetricPairs.map { case (weight, singleExp) =>
       singleExp.mapValues(_ * weight)
@@ -76,6 +84,4 @@ private[this] object ExperienceTransformation extends RevisionTransformation[Map
     }
     updatedExperienceWithPenalty
   }
-
-  override def metricName: String = "exp"
 }

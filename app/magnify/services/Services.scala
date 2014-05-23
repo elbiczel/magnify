@@ -4,10 +4,12 @@ import java.util.concurrent.Executors
 
 import scala.concurrent.ExecutionContext
 
-import com.google.inject.AbstractModule
+import com.google.inject.{AbstractModule, TypeLiteral}
 import com.google.inject.name.Names
+import japa.parser.ast.body.TypeDeclaration
 import magnify.common.reflect.constructor
 import magnify.features._
+import magnify.model.graph.{FullGraph, Graph}
 import magnify.services.imports.AstBuilder
 import magnify.services.metrics._
 
@@ -26,5 +28,11 @@ final class Services extends AbstractModule {
     bind(classOf[Imports]).toConstructor(constructor[ProjectImports])
     bind(classOf[FullGraphFactory]).toConstructor(constructor[FullGraphFactoryImpl])
     bind(classOf[RevisionGraphFactory]).toConstructor(constructor[RevisionGraphFactoryImpl])
+    bind(new TypeLiteral[MetricsProvider[FullGraph, FullGraph, FullGraphMetric]]() {})
+        .toConstructor(constructor[FullGraphDependenciesResolvedMetricsProvider])
+    bind(new TypeLiteral[MetricsProvider[Graph, Graph, RevisionMetric]]() {})
+        .toConstructor(constructor[RevisionDependenciesResolvedMetricsProvider])
+    bind(new TypeLiteral[MetricsProvider[TypeDeclaration, AnyRef, AstMetric]]() {})
+        .toConstructor(constructor[AstDependenciesResolvedMetricsProvider])
   }
 }

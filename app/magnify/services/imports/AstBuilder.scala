@@ -9,7 +9,7 @@ import japa.parser.ast.`type`.ClassOrInterfaceType
 import japa.parser.ast.body.TypeDeclaration
 import japa.parser.ast.expr.{NameExpr, QualifiedNameExpr}
 import japa.parser.ast.visitor.VoidVisitorAdapter
-import magnify.features.AstMetric
+import magnify.features.{AstMetric, MetricsProvider}
 import magnify.model.Ast
 import play.api.Logger
 
@@ -78,7 +78,8 @@ private[this] class TypeDeclarationParser(
 
 }
 
-class AstBuilder(astMetrics: java.util.Set[AstMetric]) extends (CompilationUnit => Seq[Ast]) with OrEmptyEnhancer {
+class AstBuilder(astMetrics: MetricsProvider[TypeDeclaration, AnyRef, AstMetric])
+    extends (CompilationUnit => Seq[Ast]) with OrEmptyEnhancer {
 
   def apply(unit: CompilationUnit): Seq[Ast] = {
     val prefix = packagePrefix(unit)
@@ -86,13 +87,13 @@ class AstBuilder(astMetrics: java.util.Set[AstMetric]) extends (CompilationUnit 
     val asteriskImports = getImports(unit, (anyImport) => anyImport.isAsterisk) ++
         (if (prefix.nonEmpty) Set(prefix.mkString(".")) else Set())
     Seq((getDeclaredTypes(unit).map { typeUnit =>
-      val metrics = astMetrics.toSeq.map((metric) => (metric.name -> metric(typeUnit))).toMap
+      val metricValues = astMetrics().map((metric) => (metric.name -> metric(typeUnit))).toMap
       val astBuilder = new TypeDeclarationParser(
         prefix,
         typeUnit.getName,
         explicitImports,
         asteriskImports)
-      astBuilder(typeUnit, metrics)
+      astBuilder(typeUnit, metricValues)
     }): _*)
   }
 

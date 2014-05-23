@@ -1,5 +1,8 @@
 package magnify.features
 
-import magnify.model.graph.FullGraph
 
-trait Metric extends (FullGraph => FullGraph)
+trait Metric[A, B] extends (A => B) {
+  def name: String
+
+  def dependencies: Set[String] = Set()
+}

@@ -2,16 +2,16 @@ package controllers
 
 import scala.collection.JavaConversions._
 
+import com.google.inject.TypeLiteral
 import com.tinkerpop.blueprints.{Graph => _, _}
 import com.tinkerpop.blueprints.Direction._
-import magnify.features.Sources
+import magnify.features.{MetricNames, Sources}
 import magnify.model.graph._
 import magnify.modules.inject
 import play.api.libs.json._
 import play.api.libs.json.Json._
 import play.api.libs.json.Writes._
 import play.api.mvc._
-import com.google.inject.TypeLiteral
 
 object ShowGraph extends ShowGraph(
     inject[Sources],
@@ -109,8 +109,9 @@ sealed class ShowGraph (
     for (vertex <- vertices.toSeq) yield {
       val name = vertex.getProperty("name").toString
       val kind = vertex.getProperty("kind").toString
-      val pageRank = Option(vertex.getProperty[String]("page-rank")).getOrElse("")
-      Map("name" -> name, "kind" -> kind, "page-rank" -> pageRank) ++ property(vertex, "metric--avg-lines-of-code")
+      val pageRank = Option(vertex.getProperty[String](MetricNames.propertyName(MetricNames.pageRank))).getOrElse("")
+      Map("name" -> name, "kind" -> kind, MetricNames.propertyName(MetricNames.pageRank) -> pageRank) ++ property(
+        vertex, MetricNames.propertyName(MetricNames.averageLinesOfCode))
     }
 
   private def property(v: Element, name: String): Map[String, String] =

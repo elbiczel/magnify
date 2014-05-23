@@ -1,6 +1,5 @@
 package magnify.services
 
-import java.util
 
 import scala.collection.JavaConversions._
 
@@ -8,11 +7,12 @@ import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.tinkerpop.blueprints.{Direction, Vertex}
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph
 import com.tinkerpop.pipes.PipeFunction
-import magnify.features.{RevisionMetric, RevisionGraphFactory}
+import magnify.features.{MetricsProvider, RevisionGraphFactory, RevisionMetric}
 import magnify.model.graph.{Actions, FullGraph, Graph, RevisionGraph}
 import play.api.Logger
 
-class RevisionGraphFactoryImpl(metrics: util.Set[RevisionMetric]) extends RevisionGraphFactory with Actions {
+class RevisionGraphFactoryImpl(metrics: MetricsProvider[Graph, Graph, RevisionMetric])
+    extends RevisionGraphFactory with Actions {
 
   private val logger = Logger(classOf[RevisionGraphFactoryImpl].getSimpleName)
 
@@ -62,7 +62,7 @@ class RevisionGraphFactoryImpl(metrics: util.Set[RevisionMetric]) extends Revisi
       logger.info("Add package Imports starts: " + System.nanoTime())
       revGraph.addPackageImports()
       logger.info("Add package Imports finished: " + System.nanoTime())
-      metrics.foldLeft(revGraph.asInstanceOf[Graph]) { case (graph, metric) =>
+      metrics().foldLeft(revGraph.asInstanceOf[Graph]) { case (graph, metric) =>
         metric(graph)
       }
     }

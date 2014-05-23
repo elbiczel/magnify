@@ -5,6 +5,7 @@ import scala.collection.JavaConversions._
 import com.tinkerpop.blueprints.{Edge, Graph => BlueprintsGraph, Vertex}
 import com.tinkerpop.blueprints.oupls.jung.GraphJung
 import edu.uci.ics.jung.algorithms.scoring.PageRank
+import magnify.features.MetricNames
 
 final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph with Actions {
 
@@ -51,7 +52,7 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
     val pageRank = new PageRank[Vertex, Edge](new GraphJung(graph), 0.15)
     pageRank.evaluate()
     for (vertex <- graph.getVertices) {
-      vertex.setProperty("page-rank", pageRank.getVertexScore(vertex).toString)
+      vertex.setProperty(MetricNames.propertyName(MetricNames.pageRank), pageRank.getVertexScore(vertex).toString)
     }
   }
 

@@ -6,7 +6,7 @@ import japa.parser.ast.body.{ConstructorDeclaration, MethodDeclaration, TypeDecl
 import japa.parser.ast.expr.{BinaryExpr, ConditionalExpr}
 import japa.parser.ast.stmt._
 import japa.parser.ast.visitor.VoidVisitorAdapter
-import magnify.features.AstMetric
+import magnify.features.{AstMetric, MetricNames}
 
 // Implemented as defined: http://docs.codehaus.org/display/SONAR/Metrics+-+Complexity
 private[this] class McCabeCcVisitor extends VoidVisitorAdapter[Object] {
@@ -95,5 +95,5 @@ class ClassMcCabeCyclomaticComplexityMetric extends AstMetric {
     visitor.getComplexity.asInstanceOf[AnyRef]
   }
 
-  override def name: String = "mcCabeCC"
+  override final val name: String = MetricNames.mcCabeCyclomaticComplexity
 }

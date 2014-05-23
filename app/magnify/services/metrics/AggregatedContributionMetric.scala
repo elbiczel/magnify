@@ -6,7 +6,7 @@ import scala.concurrent.ExecutionContext
 import com.google.inject.name.Named
 import com.tinkerpop.blueprints.{Direction, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
-import magnify.features.{LoggedFunction, RevisionMetric}
+import magnify.features.{LoggedFunction, MetricNames, RevisionMetric}
 import magnify.model.graph.{AsVertex, FullGraph, Graph}
 import play.api.Logger
 
@@ -21,6 +21,10 @@ abstract class AggregatedContributionMetric
         .iterate()
     g
   }
+
+  override final val name: String = MetricNames.aggregatedContribution
+
+  override final val dependencies: Set[String] = Set(MetricNames.contribution)
 }
 
 class LoggedAggregatedContributionMetric(@Named("ServicesPool") implicit override val pool: ExecutionContext)
@@ -36,6 +40,8 @@ class RevisionAggregatedContributionMetric extends RevisionMetric {
         .iterate()
     graph
   }
+
+  override final val name: String = MetricNames.aggregatedContribution
 }
 
 class LoggedRevisionAggregatedContributionMetric
@@ -43,21 +49,22 @@ class LoggedRevisionAggregatedContributionMetric
 
 private[this] object AggregateContributionTransformation extends RevisionTransformation[Map[String, Double]] {
 
-  override def metricName: String = "aggr-contribution"
-
   override def metric(revision: Vertex, current: Vertex, oParent: Option[Vertex]): Map[String, Double] = {
     val authorId = getName(revision)
     val prevExperience: Map[String, Double] = oParent
         .map(getMetricValue[Map[String, Double]](metricName, _))
         .getOrElse(Map[String, Double]())
-    val newAuthorExperience = prevExperience.getOrElse(authorId, 0.0) + getMetricValue[Double]("contribution", current)
+    val newAuthorExperience =
+      prevExperience.getOrElse(authorId, 0.0) + getMetricValue[Double](MetricNames.contribution, current)
     val updatedExperience = prevExperience.updated(authorId, newAuthorExperience)
     updatedExperience
   }
 }
 
-private[this] class AggregateAggrContributionExperience(dir: Direction, label: String, kind: String)
-  extends AggregatingMetricTransformation[Map[String, Double]](dir, label, kind, "aggr-contribution") {
+private[this] class AggregateAggrContributionExperience(
+    dir: Direction, label: String, kind: String)
+  extends AggregatingMetricTransformation[Map[String, Double]](
+    dir, label, kind, MetricNames.aggregatedContribution) {
 
   override def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Map[String, Double] = {
     val individuals = pipe.toList.toSeq.map(getMetricValue[Map[String, Double]](metricName, _))
