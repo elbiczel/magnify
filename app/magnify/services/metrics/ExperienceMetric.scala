@@ -45,8 +45,7 @@ private[this] class GetAggregatedExperience(dir: Direction, label: String, kind:
   override final def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Map[String, Double] = {
     val individuals = pipe.toList.toSeq
     val weightMetricPairs = individuals.map((v) => (
-        v.getProperty[Double]("metric--lines-of-code") -> v
-            .getProperty[Map[String, Double]]("metric--exp")))
+        getMetricValue[Double]("lines-of-code", v) -> getMetricValue[Map[String, Double]](metricName, v)))
     val weightSum = weightMetricPairs.map(_._1).sum
     val weightedExps = weightMetricPairs.map { case (weight, singleExp) =>
       singleExp.mapValues(_ * weight)
@@ -61,11 +60,14 @@ private[this] class GetAggregatedExperience(dir: Direction, label: String, kind:
 }
 
 private[this] object ExperienceTransformation extends RevisionTransformation[Map[String, Double]] {
-  override def metric(revision: Vertex, current: Vertex, oParent: Option[Vertex]): Map[String, Double] = {
+  override def metric(
+      revision: Vertex,
+      current: Vertex,
+      oParent: Option[Vertex]): Map[String, Double] = {
     val authorId = getName(revision)
     val prevExperience: Map[String, Double] = oParent
-        .map(_.getProperty[Map[String, Double]]("metric--exp"))
-        .getOrElse(Map())
+        .map(getMetricValue[Map[String, Double]](metricName, _))
+        .getOrElse(Map[String, Double]())
     val newAuthorExperience = prevExperience.getOrElse(authorId, 0.0) + 5.0
     val baseUpdatedExperience = prevExperience.updated(authorId, newAuthorExperience)
     val otherAuthors = prevExperience.keys.filter(_ != authorId)

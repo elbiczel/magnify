@@ -18,8 +18,8 @@ class ContributionMetric extends Metric with Actions {
     graph.edges.has("label", "commit").transform(new AsEdge).sideEffect(new GetClassContribution).iterate()
     getRevisionClasses(graph.getTailCommitVertex).sideEffect(new PipeFunction[Vertex, Double] {
       override def compute(v: Vertex): Double = {
-        val loc = v.getProperty[Double]("metric--lines-of-code")
-        v.setProperty("metric--contribution", loc)
+        val loc = getMetricValue[Double]("lines-of-code", v)
+        setMetricValue("contribution", v, loc)
         loc
       }
     }).iterate()
@@ -45,15 +45,15 @@ class RevisionContributionMetric extends RevisionMetric {
 
 class LoggedRevisionContributionMetric extends RevisionContributionMetric with LoggedFunction[Graph, Graph]
 
-private[this] class GetClassContribution extends PipeFunction[Edge, Double] {
+private[this] class GetClassContribution extends PipeFunction[Edge, Double] with Actions {
   override def compute(e: Edge): Double = {
     val newV = e.getVertex(Direction.IN)
     val oldV = e.getVertex(Direction.OUT)
     if (oldV.getProperty[String]("kind") != "class") { 0.0 } else {
-      val newLOC = newV.getProperty[Double]("metric--lines-of-code")
-      val oldLOC = oldV.getProperty[Double]("metric--lines-of-code")
-      val contribution = Math.abs(newLOC - oldLOC)
-      newV.setProperty("metric--contribution", contribution)
+      val newLOC = getMetricValue[Double]("lines-of-code", newV)
+      val oldLOC = getMetricValue[Double]("lines-of-code", oldV)
+      val contribution = Math.abs(newLOC - oldLOC) + 1
+      setMetricValue("contribution", newV, contribution)
       contribution
     }
   }
@@ -62,7 +62,7 @@ private[this] class GetClassContribution extends PipeFunction[Edge, Double] {
 private[this] class GetAggregatedContribution(dir: Direction, label: String, kind: String)
     extends AggregatingMetricTransformation[Double](dir, label, kind, "contribution") {
   override final def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
-    pipe.property("metric--contribution").toList.toSeq.asInstanceOf[Seq[Double]].sum
+    pipe.toList.toSeq.map(getMetricValue[Double]("contribution", _)).sum
   }
 }
 

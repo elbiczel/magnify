@@ -16,7 +16,7 @@ class RevisionAvgLocMetric extends RevisionMetric with Actions {
     g.vertices.has("kind", "package").transform(new AsVertex).sideEffect(
       new AggregatingMetricTransformation[Double](Direction.IN, "in-package", "class", "avg-lines-of-code") {
         override def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
-          val classMetrics = pipe.property("metric--lines-of-code").toList.toSeq.asInstanceOf[Seq[Double]]
+          val classMetrics = pipe.toList.toSeq.map(getMetricValue[Double]("lines-of-code", _))
           Option(classMetrics).filter(_.size > 0).map(_.sum / classMetrics.size).getOrElse(0.0)
         }
       }).iterate()
