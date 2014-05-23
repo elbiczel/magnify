@@ -15,7 +15,7 @@ sealed abstract class DependenciesResolvedMetricsProvider[A, B, C <: Metric[A, B
   private val adding = mutable.Set[String]()
   private val addedMetrics = mutable.Set[String]()
 
-  override def apply(): Seq[C] = {
+  override final def apply(): Seq[C] = {
     addedMetrics.clear()
     adding.clear()
     metrics.foldLeft(Seq[C]()) { (metricsSeq, metric) =>
