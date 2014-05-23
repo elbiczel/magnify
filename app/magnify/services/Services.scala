@@ -8,6 +8,7 @@ import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import magnify.common.reflect.constructor
 import magnify.features._
+import magnify.services.imports.AstBuilder
 import magnify.services.metrics._
 
 /**
@@ -20,6 +21,7 @@ final class Services extends AbstractModule {
     bind(classOf[ExecutionContext])
         .annotatedWith(Names.named("ServicesPool"))
         .toInstance(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
+    bind(classOf[AstBuilder]).toConstructor(constructor[AstBuilder])
     bind(classOf[Parser]).toConstructor(constructor[ClassAndImportsParser])
     bind(classOf[Imports]).toConstructor(constructor[ProjectImports])
     bind(classOf[FullGraphFactory]).toConstructor(constructor[FullGraphFactoryImpl])

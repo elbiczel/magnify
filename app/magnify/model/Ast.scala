@@ -9,4 +9,5 @@ final case class Ast(
     className: String,
     imports: Set[String],
     asteriskPackages: Set[String],
-    unresolvedClasses: Set[String])
+    unresolvedClasses: Set[String],
+    metrics: Map[String, AnyRef] = Map())

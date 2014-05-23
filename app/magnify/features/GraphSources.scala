@@ -13,7 +13,7 @@ import com.google.inject.name.Named
 import com.tinkerpop.blueprints.{Direction, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import magnify.model._
-import magnify.model.graph.{FullGraph, HasInFilter, NotFilter}
+import magnify.model.graph.{Actions, FullGraph, HasInFilter, NotFilter}
 import play.api.Logger
 
 /**
@@ -22,7 +22,7 @@ import play.api.Logger
 private[features] final class GraphSources(
     parse: Parser, imports: Imports, metrics: util.Set[Metric],
     graphFactory: FullGraphFactory, revisionGraphFactory: RevisionGraphFactory,
-    @Named("ServicesPool") implicit val pool: ExecutionContext) extends Sources {
+    @Named("ServicesPool") implicit val pool: ExecutionContext) extends Sources with Actions {
 
   private val logger = Logger(classOf[GraphSources].getSimpleName)
   private val graphsDir = "graphs/"
@@ -171,8 +171,11 @@ private[features] final class GraphSources(
       } else {
         cls.setProperty("source-code", parsedFile.content)
       }
+      parsedFile.ast.metrics.foreach { case (name, value) =>
+        setMetricValue(name, cls, value)
+      }
       val linesOfCode = parsedFile.content.count(_ == '\n')
-      cls.setProperty("metric--lines-of-code", linesOfCode.toDouble)
+      setMetricValue("lines-of-code", cls, linesOfCode.toDouble)
       cls
   }
 

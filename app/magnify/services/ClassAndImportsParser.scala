@@ -12,13 +12,13 @@ import play.api.Logger
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
  */
-private[services] final class ClassAndImportsParser extends Parser {
+private[services] final class ClassAndImportsParser(astBuilder: AstBuilder) extends Parser {
   JavaParser.setCacheParser(false)  // TODO: move this to dependency injection.
 
   val logger = Logger(classOf[ClassAndImportsParser].getSimpleName)
 
   override def apply(fileName: String, input: InputStream): Seq[Ast] =
-    parse(fileName, input).map(AstBuilder(_)).getOrElse(Seq())
+    parse(fileName, input).map(astBuilder).getOrElse(Seq())
 
   private def parse(fileName: String, input: InputStream): Option[CompilationUnit] =
     try {

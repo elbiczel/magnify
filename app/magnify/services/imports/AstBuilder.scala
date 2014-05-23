@@ -9,18 +9,19 @@ import japa.parser.ast.`type`.ClassOrInterfaceType
 import japa.parser.ast.body.TypeDeclaration
 import japa.parser.ast.expr.{NameExpr, QualifiedNameExpr}
 import japa.parser.ast.visitor.VoidVisitorAdapter
+import magnify.features.AstMetric
 import magnify.model.Ast
 import play.api.Logger
 
-class AstBuilder(
+private[this] class TypeDeclarationParser(
     packagePrefix: Seq[String],
     typeName: String,
     imports: Seq[String],
     asteriskPackages: Seq[String])
   extends VoidVisitorAdapter[Object]
-  with (TypeDeclaration => Ast)
+  with ((TypeDeclaration, Map[String, AnyRef]) => Ast)
   with OrEmptyEnhancer {
-  val logger = Logger(classOf[AstBuilder].getSimpleName)
+  val logger = Logger(classOf[TypeDeclarationParser].getSimpleName)
 
   private val classToImportedQualifiedName =
     imports.map((fullImport) => (fullImport.split("\\.").last, fullImport)).toMap
@@ -65,18 +66,19 @@ class AstBuilder(
     }
   }
 
-  override def apply(typeUnit: TypeDeclaration): Ast = {
+  override def apply(typeUnit: TypeDeclaration, metrics: Map[String, AnyRef] = Map()): Ast = {
     typeUnit.accept(this, null)
     Ast(
       (packagePrefix :+ typeName).mkString("."),
       qualifiedNamesOfUsedClasses.toSet,
       asteriskPackages.toSet,
-      unresolvedClasses.toSet)
+      unresolvedClasses.toSet,
+      metrics)
   }
 
 }
 
-object AstBuilder extends OrEmptyEnhancer {
+class AstBuilder(astMetrics: java.util.Set[AstMetric]) extends (CompilationUnit => Seq[Ast]) with OrEmptyEnhancer {
 
   def apply(unit: CompilationUnit): Seq[Ast] = {
     val prefix = packagePrefix(unit)
@@ -84,12 +86,13 @@ object AstBuilder extends OrEmptyEnhancer {
     val asteriskImports = getImports(unit, (anyImport) => anyImport.isAsterisk) ++
         (if (prefix.nonEmpty) Set(prefix.mkString(".")) else Set())
     Seq((getDeclaredTypes(unit).map { typeUnit =>
-      val astBuilder = new AstBuilder(
+      val metrics = astMetrics.toSeq.map((metric) => (metric.name -> metric(typeUnit))).toMap
+      val astBuilder = new TypeDeclarationParser(
         prefix,
         typeUnit.getName,
         explicitImports,
         asteriskImports)
-      astBuilder(typeUnit)
+      astBuilder(typeUnit, metrics)
     }): _*)
   }
 

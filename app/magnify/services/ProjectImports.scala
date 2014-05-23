@@ -18,7 +18,7 @@ private[services] final class ProjectImports extends Imports {
    */
   override def resolve(classes: Iterable[Ast], allClasses: Set[String]): Map[String, Seq[String]] = {
     val imports = for {
-      Ast(name, imports, asteriskPackages, unresolvedClasses) <- classes
+      Ast(name, imports, asteriskPackages, unresolvedClasses, _) <- classes
     } yield {
       val possibleImports = for (
         packageName <- asteriskPackages;
