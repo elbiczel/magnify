@@ -19,9 +19,6 @@ private[services] class MetricsModule extends AbstractModule {
     pkgMetricsBinder.addBinding().toConstructor(constructor[LoggedRevisionContributionMetric])
     pkgMetricsBinder.addBinding().toConstructor(constructor[LoggedRevisionAggregatedContributionMetric])
     val astMetricsBinder = Multibinder.newSetBinder(binder(), classOf[AstMetric])
-    // TODO(biczel): Add CC metric:
-    // http://gmetrics.sourceforge.net/gmetrics-CyclomaticComplexityMetric.html
-    // http://stackoverflow.com/questions/12355783/tools-to-automate-calculation-of-cyclomatic-complexity-in-java
-    // http://stackoverflow.com/questions/13571635/how-to-calculate-cyclomatic-complexity-of-a-project-not-a-class-function
+    astMetricsBinder.addBinding().toConstructor(constructor[ClassMcCabeCyclomaticComplexityMetric])
   }
 }
