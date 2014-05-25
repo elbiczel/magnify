@@ -30,12 +30,14 @@ $ ->
   linkColors = null
   linkColor = (link) -> linkColors[link.kind]
 
-  linkWidth = (link) ->
-    switch link.kind
-      when "in-package" then 1.5
-      when "package-imports" then 1
-      when "imports" then 1
-      when "calls" then Math.min(link.count / 10.0, 5)
+  defaultLinkWidths =
+    "in-package": () -> 1.5
+    "package-imports": () -> 1
+    imports: () -> 1
+    calls: (link) -> Math.min(link.count / 10.0, 5)
+  linkWidths = null
+  linkWidth = (link) -> linkWidths[link.kind](link)
+
 
   defaultNodeSize =
     "package": 5
@@ -57,6 +59,11 @@ $ ->
       "package-imports": defaultLinkColors["package-imports"]
       imports: defaultLinkColors.imports
       calls: defaultLinkColors.calls
+    linkWidths =
+      "in-package": defaultLinkWidths["in-package"]
+      "package-imports": defaultLinkWidths["package-imports"]
+      imports: defaultLinkWidths.imports
+      calls: defaultLinkWidths.calls
     nodeR = pageRankNodeSize
   defaultMetrics()
 
@@ -223,10 +230,16 @@ $ ->
       if ($element.is(":checked"))
         linkColors[attr] = defaultLinkColors[attr]
         strengths[attr] = defaultStrengths[attr]
+        linkWidths[attr] = defaultLinkWidths[attr]
       else
         linkColors[attr] = "transparent"
         strengths[attr] = 0
-      link.style("stroke", linkColor)
+        linkWidths[attr] = () -> 0
+      link
+        .transition()
+          .duration(750)
+          .style("stroke", linkColor)
+          .style("stroke-width", linkWidth)
       force.linkStrength(strength).start()
     onCheckLinkType(".check-pkg-imports", "package-imports")
     onCheckLinkType(".check-imports", "imports")
@@ -249,7 +262,10 @@ $ ->
         color = kindNodeColor
       else
         color = avgLocColor
-      node.style("fill", color).call(force.drag)
+      node
+        .transition()
+          .duration(750)
+          .style("fill", color)
     onCheckColourType("""input[name="node-color"]:checked""")
 
     $("""input[name="node-color"]""").on "click", ->
@@ -263,7 +279,10 @@ $ ->
         nodeR = kindNodeSize
       else
         nodeR = pageRankNodeSize
-      node.attr("r", nodeR).call(force.drag)
+      node
+        .transition()
+          .duration(750)
+          .attr("r", nodeR)
 
     onCheckNodeSize("""input[name="node-size"]:checked""")
     $("""input[name="node-size"]""").on "click", ->
