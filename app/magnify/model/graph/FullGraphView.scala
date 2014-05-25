@@ -30,6 +30,7 @@ final class FullGraphView(graph: Graph) extends GraphView {
       new LabelFilterPipe("package-imports", Filter.EQUAL),
       new LabelFilterPipe("cls-imports-pkg", Filter.EQUAL),
       new LabelFilterPipe("in-package", Filter.EQUAL),
+      new LabelFilterPipe("cls-in-pkg", Filter.EQUAL),
       new LabelFilterPipe("calls", Filter.EQUAL))
 }
 

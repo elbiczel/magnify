@@ -41,7 +41,7 @@ class RevisionContributionMetric extends RevisionMetric {
 
   override def apply(g: Graph): Graph = {
     g.vertices.has("kind", "package").transform(new AsVertex)
-        .sideEffect(new GetAggregatedContribution(Direction.IN, "in-package", "class"))
+        .sideEffect(new GetAggregatedContribution(Direction.IN, "cls-in-pkg", "class"))
         .iterate()
     g
   }

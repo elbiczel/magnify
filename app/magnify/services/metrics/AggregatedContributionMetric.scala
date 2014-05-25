@@ -36,7 +36,7 @@ class RevisionAggregatedContributionMetric extends RevisionMetric {
 
   override def apply(graph: Graph): Graph = {
     graph.vertices.has("kind", "package").transform(new AsVertex)
-        .sideEffect(new AggregateAggrContributionExperience(Direction.IN, "in-package", "class"))
+        .sideEffect(new AggregateAggrContributionExperience(Direction.IN, "cls-in-pkg", "class"))
         .iterate()
     graph
   }

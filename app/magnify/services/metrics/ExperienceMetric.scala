@@ -35,7 +35,7 @@ class RevisionExperienceMetric extends RevisionMetric {
 
   override def apply(graph: Graph): Graph = {
     graph.vertices.has("kind", "package").transform(new AsVertex)
-          .sideEffect(new GetAggregatedExperience(Direction.IN, "in-package", "class"))
+          .sideEffect(new GetAggregatedExperience(Direction.IN, "cls-in-pkg", "class"))
           .iterate()
     graph
   }

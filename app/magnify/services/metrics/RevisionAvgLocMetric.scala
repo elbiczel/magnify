@@ -14,7 +14,7 @@ class RevisionAvgLocMetric extends RevisionMetric with Actions {
 
   override def apply(g: Graph): Graph = {
     g.vertices.has("kind", "package").transform(new AsVertex).sideEffect(
-      new AggregatingMetricTransformation[Double](Direction.IN, "in-package", "class", name) {
+      new AggregatingMetricTransformation[Double](Direction.IN, "cls-in-pkg", "class", name) {
         override def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
           val classMetrics = pipe.toList.toSeq.map(getMetricValue[Double](MetricNames.linesOfCode, _))
           Option(classMetrics).filter(_.size > 0).map(_.sum / classMetrics.size).getOrElse(0.0)

@@ -23,7 +23,7 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
       val classVertex = classesByNames(clsName)
       val parentPackageName = parentPkgName(clsName)
       val parentPackageVertex = packageByName(parentPackageName)
-      addEdge(classVertex, "in-package", parentPackageVertex)
+      addEdge(classVertex, "cls-in-pkg", parentPackageVertex)
     }
   }
 
@@ -66,7 +66,7 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
           .toList.toSet[Vertex]
       importsPkg <- getPackageClasses(pkg)
           .out("imports")
-          .out("in-package")
+          .out("cls-in-pkg")
           .toList.toSeq.groupBy((v) => v).mapValues((seq) => seq.length)
     } {
       val edge = addEdge(pkg, "package-imports", importsPkg._1)
@@ -80,7 +80,7 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
       importsPkg <- new GremlinPipeline()
           .start(cls)
           .out("imports")
-          .out("in-package")
+          .out("cls-in-pkg")
           .toList.toSeq.groupBy((v) => v).mapValues((seq) => seq.length)
     } {
       val edge = addEdge(cls, "cls-imports-pkg", importsPkg._1)

@@ -30,7 +30,7 @@ trait Actions {
   final def getPackageClasses(pkg: Vertex): GremlinPipeline[Vertex, Vertex] =
     new GremlinPipeline()
         .start(pkg)
-        .in("in-package")
+        .in("cls-in-pkg")
         .has("kind", "class")
         .transform(new AsVertex)
 
