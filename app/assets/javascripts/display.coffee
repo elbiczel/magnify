@@ -187,19 +187,29 @@ $ ->
       .style("stroke-width", linkWidth)
       .style("stroke", "transparent")
 
-      check = (selector, attr) ->
-        $(selector).on "click", ->
-          if ($(this).is(":checked"))
-            linkColors[attr] = defaultLinkColors[attr]
-            strengths[attr] = defaultStrengths[attr]
-          else
-            linkColors[attr] = "transparent"
-            strengths[attr] = 0
-          link.style("stroke", linkColor)
-          force.linkStrength(strength).start()
-      check(".check-imports", "packageImports")
-      check(".check-contains", "inPackage")
-      check(".check-runtime", "calls")
+      onCheckLinkType = (selectorOrElement, attr) ->
+        $element = selectorOrElement
+        if ((typeof selectorOrElement) == "string")
+          $element = $(selectorOrElement)
+        if ($element.is(":checked"))
+          linkColors[attr] = defaultLinkColors[attr]
+          strengths[attr] = defaultStrengths[attr]
+        else
+          linkColors[attr] = "transparent"
+          strengths[attr] = 0
+        link.style("stroke", linkColor)
+        force.linkStrength(strength).start()
+      onCheckLinkType(".check-imports", "packageImports")
+      onCheckLinkType(".check-contains", "inPackage")
+      onCheckLinkType(".check-runtime", "calls")
+
+      checkLinkType = (selector, attr) ->
+        $elem = $(selector)
+        $elem.on "click", ->
+          onCheckLinkType($elem, attr)
+      checkLinkType(".check-imports", "packageImports")
+      checkLinkType(".check-contains", "inPackage")
+      checkLinkType(".check-runtime", "calls")
 
       linkedByIndex = {}
       json.edges.forEach((d) -> linkedByIndex[d.source.index + "," + d.target.index] = 1)
@@ -216,21 +226,34 @@ $ ->
       .style("fill", "#000000")
       .call(force.drag)
 
-      $("""input[name="node-color"]""").on "click", ->
-        $this = $(this)
-        if ($this.is(":checked") and $this.attr("value") == "black")
+      onCheckColourType = (selectorOrElement) ->
+        $element = selectorOrElement
+        if ((typeof selectorOrElement) == "string")
+          $element = $(selectorOrElement)
+        if ($element.is(":checked") and $element.attr("value") == "black")
           color = "#000000"
         else
           color = (d) -> badness(d["metric--avg-loc"])
         node.style("fill", color).call(force.drag)
+      onCheckColourType("""input[name="node-color"]:checked""")
 
-      $("""input[name="node-size"]""").on "click", ->
-        $this = $(this)
-        if ($this.is(":checked") and $this.attr("value") == "constant")
+      $("""input[name="node-color"]""").on "click", ->
+        onCheckColourType($(this))
+
+      onCheckNodeSize = (selectorOrElement) ->
+        $element = selectorOrElement
+        if ((typeof selectorOrElement) == "string")
+          $element = $(selectorOrElement)
+        if ($element.is(":checked") and $element.attr("value") == "constant")
           size = 5
         else
           size = (d) -> 3 + Math.max(3, 100.0 * d["metric--pr"])
         node.attr("r", size).call(force.drag)
+
+      onCheckNodeSize("""input[name="node-size"]:checked""")
+      $("""input[name="node-size"]""").on "click", ->
+        onCheckNodeSize($(this))
+
 
       node
       .append("title")
@@ -262,65 +285,46 @@ $ ->
     $(".nav-graph-custom-tab").addClass("active")
     clearSvg()
     $(".gauges").remove()
-    $(".mag-sidenav .active").after(
+    $(".mag-sidenav").after(
       """
-      <li class="active gauges">
-        <a href="#">
-          <form>
-            <div class="control-group">
-              <label class="control-label">Edge</label>
-              <div class="controls">
-                <label class="checkbox inline">
-                  <input type="checkbox" value="" class="check-imports"/>
-                  imports
-                </label>
-                <label class="checkbox inline">
-                  <input type="checkbox" value="" class="check-contains"/>
-                  contains
-                </label>
-                <label class="checkbox inline">
-                  <input type="checkbox" value="" class="check-runtime"/>
-                  runtime
-                </label>
-              </div>
-            </div>
-            <div class="control-group">
-              <label class="control-label">Node size</label>
-              <div class="controls">
-                <label class="radio">
-                  <input type="radio" name="node-size" value="constant" checked="checked"/>
-                  Constant
-                </label>
-                <label class="radio">
-                  <input type="radio" name="node-size" value="page-rank"/>
-                  Page rank
-                </label>
-              </div>
-            </div>
-            <div class="control-group">
-              <label class="control-label">Node color</label>
-              <div class="controls">
-                <label class="radio">
-                  <input type="radio" name="node-color" value="black" checked="checked"/>
-                  Black
-                </label>
-                <label class="radio">
-                  <input type="radio" name="node-color" value="by-avg-loc"/>
-                  Avg. lines of code / class
-                </label>
-                <!--<label class="radio">
-                  <input type="radio" value=""/>
-                  Avg number of methods / class
-                </label>
-                <label class="radio">
-                  <input type="radio" value=""/>
-                  Classes total
-                </label>-->
-              </div>
-            </div>
-          </form>
-        </a>
-      </li>
+      <nav class="navbar navbar-default gauges" role="navigation">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+          </div>
+          <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Edge<b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li><label class="checkbox inline"><input type="checkbox" value="" class="check-imports"/>imports</label></li>
+                  <li><label class="checkbox inline"><input type="checkbox" value="" class="check-contains"/>contains</label></li>
+                  <li><label class="checkbox inline"><input type="checkbox" value="" class="check-runtime"/>runtime</label></li>
+                </ul>
+              </li>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Node size<b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li><label class="radio"><input type="radio" name="node-size" value="constant" checked="checked"/>Constant</label></li>
+                  <li><label class="radio"><input type="radio" name="node-size" value="page-rank"/>Page rank</label></li>
+                </ul>
+              </li>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Node colour<b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li><label class="radio"><input type="radio" name="node-color" value="black" checked="checked"/>Black</label></li>
+                  <li><label class="radio"><input type="radio" name="node-color" value="by-avg-loc"/>Avg. lines of code / class</label></li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
       """)
     currentCreateFunction = ->
       customSvg(jsonAddress("custom.json"))
@@ -360,6 +364,5 @@ $ ->
   $("[rel='tooltip']").tooltip()
   $("#revisions").on "revchange", (event) ->
     clearSvg()
-    $(".gauges").remove()
     (currentCreateFunction && currentCreateFunction());
 
