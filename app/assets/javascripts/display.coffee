@@ -110,6 +110,16 @@ $ ->
   link = svg.selectAll("line.link")
   node = svg.selectAll("circle.node")
 
+  force.on "tick", ->
+    link
+      .attr("x1", (d) -> d.source.x)
+      .attr("y1", (d) -> d.source.y)
+      .attr("x2", (d) -> d.target.x)
+      .attr("y2", (d) -> d.target.y)
+    node
+      .attr("cx", (d) -> d.x)
+      .attr("cy", (d) -> d.y)
+
   makeSvg = (jsonAddress) ->
     d3.json jsonAddress, (json) ->
       force
@@ -179,16 +189,6 @@ $ ->
         .transition(750)
           .style("fill-opacity", 1e-6)
           .remove()
-
-      force.on "tick", ->
-        link
-          .attr("x1", (d) -> d.source.x)
-          .attr("y1", (d) -> d.source.y)
-          .attr("x2", (d) -> d.target.x)
-          .attr("y2", (d) -> d.target.y)
-        node
-          .attr("cx", (d) -> d.x)
-          .attr("cy", (d) -> d.y)
 
   $(".custom-button").on "click", (event) -> if (!$(".nav-graph-custom-tab").hasClass("active"))
     $(".nav-graph-detail-level").find("*").removeClass("active")
