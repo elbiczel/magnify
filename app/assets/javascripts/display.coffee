@@ -348,7 +348,7 @@ $ ->
 
   $(".class-imports-button").on "click", (event) ->
     $(".nav-graph-detail-level").find("*").removeClass("active")
-    $(".nav-graph-imports-imports-tab").addClass("active")
+    $(".nav-graph-class-imports-tab").addClass("active")
     clearSvg()
     $(".gauges").remove()
     currentCreateFunction = ->
