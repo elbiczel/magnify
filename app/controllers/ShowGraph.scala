@@ -49,6 +49,13 @@ sealed class ShowGraph (
     }
   }
 
+  def showFullJson(name: String) = Action { implicit request =>
+    withGraph(name) { graph =>
+      val factory = graphViewFactories(classOf[FullGraphView])
+      Ok(json(factory(graph, request.getQueryString("rev").filter(_.trim.nonEmpty))))
+    }
+  }
+
   def showPackagesJson(name: String) = Action { implicit request =>
     withGraph(name) { graph =>
       val factory = graphViewFactories(classOf[PackagesGraphView])
@@ -110,8 +117,9 @@ sealed class ShowGraph (
       val name = vertex.getProperty("name").toString
       val kind = vertex.getProperty("kind").toString
       val pageRank = Option(vertex.getProperty[String](MetricNames.propertyName(MetricNames.pageRank))).getOrElse("")
-      Map("name" -> name, "kind" -> kind, MetricNames.propertyName(MetricNames.pageRank) -> pageRank) ++ property(
-        vertex, MetricNames.propertyName(MetricNames.averageLinesOfCode))
+      Map("name" -> name, "kind" -> kind, MetricNames.propertyName(MetricNames.pageRank) -> pageRank) ++
+          property(vertex, MetricNames.propertyName(MetricNames.averageLinesOfCode)) ++
+          property(vertex, "parent-pkg-name")
     }
 
   private def property(v: Element, name: String): Map[String, String] =
@@ -119,13 +127,15 @@ sealed class ShowGraph (
 
   private def toMap(edges: Iterable[Edge], idByVertexName: Map[String, Int]): Seq[Map[String, JsValue]] =
     for {
-      edge <- edges.toSeq
+      edge <- edges.filter((e) => e.getVertex(Direction.IN) != e.getVertex(Direction.OUT)).toSeq
       source <- idByVertexName.get(name(edge, OUT)).toSeq
       target <- idByVertexName.get(name(edge, IN)).toSeq
     } yield Map(
       "source" -> toJson(source),
       "target" -> toJson(target),
-      "kind" -> toJson(edge.getLabel)) ++ property(edge, "count").mapValues(s => toJson(s))
+      "kind" -> toJson(edge.getLabel)) ++
+        property(edge, "count").mapValues(s => toJson(s)) ++
+        property(edge, "weight").mapValues(s => toJson(s))
 
   private def name(edge: Edge, direction: Direction): String =
     edge.getVertex(direction).getProperty("name").toString

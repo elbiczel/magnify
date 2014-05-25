@@ -18,6 +18,9 @@ private[services] class GraphViewModule extends AbstractModule {
         .addBinding(classOf[CustomGraphView])
         .toConstructor(constructor[CustomGraphViewFactory])
     graphViewFactories
+        .addBinding(classOf[FullGraphView])
+        .toConstructor(constructor[FullGraphViewFactory])
+    graphViewFactories
         .addBinding(classOf[PackageImportsGraphView])
         .toConstructor(constructor[PackageImportsGraphViewFactory])
     graphViewFactories

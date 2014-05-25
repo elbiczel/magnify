@@ -5,6 +5,7 @@
 # Home page
 GET         /project/:name/graph.html                         controllers.ShowGraph.show(name: String)
 GET         /project/:name/custom.json                        controllers.ShowGraph.showCustomJson(name: String)
+GET         /project/:name/full.json                          controllers.ShowGraph.showFullJson(name: String)
 GET         /project/:name/packages.json                      controllers.ShowGraph.showPackagesJson(name: String)
 GET         /project/:name/pkgImports.json                    controllers.ShowGraph.showPkgImportsJson(name: String)
 GET         /project/:name/clsImports.json                    controllers.ShowGraph.showClsImportsJson(name: String)

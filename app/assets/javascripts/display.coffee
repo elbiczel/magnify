@@ -32,7 +32,7 @@ $ ->
 
   defaultLinkWidths =
     "in-package": () -> 1.5
-    "package-imports": () -> 1
+    "package-imports": (link) -> Math.min(Math.log(link.weight) / 3, 10)
     imports: () -> 1
     calls: (link) -> Math.min(link.count / 10.0, 5)
   linkWidths = null

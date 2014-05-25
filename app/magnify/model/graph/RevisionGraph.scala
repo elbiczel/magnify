@@ -11,6 +11,7 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
 
   def addPackages(): Unit = {
     val classVertices = vertices.has("kind", "class").toList.toSeq.asInstanceOf[Seq[Vertex]]
+    classVertices.foreach((v) => v.setProperty("parent-pkg-name", parentPkgName(v.getProperty[String]("name"))))
     val classNames = classVertices.map(_.getProperty[String]("name"))
     val classesByNames = classNames.zip(classVertices).toMap
     val packageNames = allPackageNames(classNames).toSeq
