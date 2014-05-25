@@ -96,6 +96,17 @@ $ ->
     .attr("fill", "transparent")
     .attr("pointer-events", "all")
 
+  svg
+    .append("svg:defs")
+      .append("svg:marker")
+        .attr("id","arrow-head").attr("viewBox", "0 0 10 10")
+        .attr("refX", 1).attr("refY", 5)
+        .attr("markerWidth", 4).attr("markerHeight", 3)
+        .attr("markerUnit", "strokeWidth").attr("orient", "auto")
+        .append("svg:polyline")
+          .style("fill","#000")
+          .attr("points", "0,0 5,5 0,10 1,5")
+
   link = svg.selectAll("line.link")
   node = svg.selectAll("circle.node")
 
@@ -116,6 +127,7 @@ $ ->
       enterLink = link.enter()
         .append("svg:line")
         .attr("class", "link")
+        .attr("marker-end", "url(#arrow-head)")
         .style("stroke-width", 1e-6)
         .style("fill-opacity", 1e-6)
 
