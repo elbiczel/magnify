@@ -122,13 +122,23 @@ $ ->
 
   makeSvg = (jsonAddress) ->
     d3.json jsonAddress, (json) ->
+      oldByName = {}
+      oldByName[n.name] = n for n in force.nodes()
+      updateNewNode = (node) ->
+        if oldByName[node.name]
+          old = oldByName[node.name]
+          node.x = old.x
+          node.y = old.y
+          node.px = old.px
+          node.py = old.py
+      updateNewNode node for node in json.nodes
       force
         .nodes(json.nodes)
         .links(json.edges)
         .start()
 
       link = svg.selectAll("line.link")
-        .data(json.edges, (d) -> d.source.index + "," + d.target.index)
+        .data(json.edges, (d) -> d.source.name + "," + d.target.name)
 
       # update
       #EMPTY
