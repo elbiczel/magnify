@@ -28,6 +28,7 @@ final class FullGraphView(graph: Graph) extends GraphView {
     new OrFilterPipe[Edge](
       new LabelFilterPipe("imports", Filter.EQUAL),
       new LabelFilterPipe("package-imports", Filter.EQUAL),
+      new LabelFilterPipe("cls-imports-pkg", Filter.EQUAL),
       new LabelFilterPipe("in-package", Filter.EQUAL),
       new LabelFilterPipe("calls", Filter.EQUAL))
 }

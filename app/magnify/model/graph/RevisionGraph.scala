@@ -4,6 +4,7 @@ import scala.collection.JavaConversions._
 
 import com.tinkerpop.blueprints.{Edge, Graph => BlueprintsGraph, Vertex}
 import com.tinkerpop.blueprints.oupls.jung.GraphJung
+import com.tinkerpop.gremlin.java.GremlinPipeline
 import edu.uci.ics.jung.algorithms.scoring.PageRank
 import magnify.features.MetricNames
 
@@ -69,6 +70,20 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
           .toList.toSeq.groupBy((v) => v).mapValues((seq) => seq.length)
     } {
       val edge = addEdge(pkg, "package-imports", importsPkg._1)
+      edge.setProperty("weight", importsPkg._2)
+    }
+    for {
+      cls <- vertices
+        .has("kind", "class")
+        .transform(new AsVertex)
+        .toList.toSet[Vertex]
+      importsPkg <- new GremlinPipeline()
+          .start(cls)
+          .out("imports")
+          .out("in-package")
+          .toList.toSeq.groupBy((v) => v).mapValues((seq) => seq.length)
+    } {
+      val edge = addEdge(cls, "cls-imports-pkg", importsPkg._1)
       edge.setProperty("weight", importsPkg._2)
     }
   }
