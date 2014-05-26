@@ -24,6 +24,8 @@ abstract class ExperienceMetric extends AbstractRevWalkMetric[Map[String, Double
   override final val name: String = MetricNames.experience
 
   override final val dependencies: Set[String] = Set(MetricNames.linesOfCode)
+
+  override final val isSerializable: Boolean = false
 }
 
 class LoggedExperienceMetric(@Named("ServicesPool") implicit override val pool: ExecutionContext)
@@ -43,6 +45,8 @@ class RevisionExperienceMetric extends RevisionMetric {
   override final val name: String = MetricNames.experience
 
   override final val dependencies: Set[String] = Set(MetricNames.linesOfCode)
+
+  override final val isSerializable: Boolean = false
 }
 
 class LoggedRevisionExperienceMetric extends RevisionExperienceMetric with LoggedFunction[Graph, Graph]

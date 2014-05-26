@@ -25,6 +25,8 @@ abstract class AggregatedContributionMetric
   override final val name: String = MetricNames.aggregatedContribution
 
   override final val dependencies: Set[String] = Set(MetricNames.contribution)
+
+  override final val isSerializable: Boolean = false
 }
 
 class LoggedAggregatedContributionMetric(@Named("ServicesPool") implicit override val pool: ExecutionContext)
@@ -42,6 +44,8 @@ class RevisionAggregatedContributionMetric extends RevisionMetric {
   }
 
   override final val name: String = MetricNames.aggregatedContribution
+
+  override final val isSerializable: Boolean = false
 }
 
 class LoggedRevisionAggregatedContributionMetric
