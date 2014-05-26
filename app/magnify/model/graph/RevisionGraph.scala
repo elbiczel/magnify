@@ -86,5 +86,19 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
       val edge = addEdge(cls, "cls-imports-pkg", importsPkg._1)
       edge.setProperty("weight", importsPkg._2)
     }
+    for {
+      cls <- vertices
+          .has("kind", "class")
+          .transform(new AsVertex)
+          .toList.toSet[Vertex]
+      pkgImportingCls <- new GremlinPipeline()
+          .start(cls)
+          .in("imports")
+          .out("cls-in-pkg")
+          .toList.toSeq.groupBy((v) => v).mapValues((seq) => seq.length)
+    } {
+      val edge = addEdge(pkgImportingCls._1, "pkg-imports-cls", cls)
+      edge.setProperty("weight", pkgImportingCls._2)
+    }
   }
 }
