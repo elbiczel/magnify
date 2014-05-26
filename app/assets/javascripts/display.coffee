@@ -15,10 +15,13 @@ $ ->
   color = null
 
   defaultStrengths =
-    "in-package": 1.0 # 0.5
+    "in-package": 0.5 # 0.5
     "pkg-imports-pkg": 0.03 # 0.1
     "cls-imports-cls": 0.01
     calls: 0.01
+    "cls-in-pkg": 1.0
+    "cls-imports-pkg": 0.0
+    "pkg-imports-cls": 0.0
   strengths = null
   strength = (link) -> strengths[link.kind]
 
@@ -39,8 +42,8 @@ $ ->
     "cls-imports-cls": () -> 1
     calls: (link) -> Math.min(link.count / 10.0, 5)
     "cls-in-pkg": () -> 0
-    "cls-imports-pkg": (link) -> Math.min((Math.log(link.weight) / 3) + 1, 10)
-    "pkg-imports-cls": (link) -> Math.min((Math.log(link.weight) / 3) + 1, 10)
+    "cls-imports-pkg": (link) -> 0 # Math.min((Math.log(link.weight) / 3) + 1, 10)
+    "pkg-imports-cls": (link) -> 0 # Math.min((Math.log(link.weight) / 3) + 1, 10)
   linkWidths = null
   linkWidth = (link) -> linkWidths[link.kind](link)
 
