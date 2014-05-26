@@ -116,19 +116,6 @@ $ ->
     .append("svg:svg")
     .attr("width", width)
     .attr("height", height)
-    .attr("pointer-events", "all")
-    .append("svg:g")
-    .call(d3.behavior.zoom().on("zoom", ->
-        svg.attr("transform", "translate(#{d3.event.translate}) scale(#{d3.event.scale})")
-    ))
-    .append("svg:g")
-
-  svg
-    .append("svg:rect")
-    .attr("width", width)
-    .attr("height", height)
-    .attr("fill", "transparent")
-    .attr("pointer-events", "all")
 
   svg
     .append("svg:defs")
