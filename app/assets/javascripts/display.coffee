@@ -378,6 +378,16 @@ $ ->
     currentCreateFunction()
     $("[rel='tooltip']").tooltip()
 
+  $(".full-button").on "click", (event) -> if (!$(".nav-graph-full-tab").hasClass("active"))
+    defaultMetrics()
+    $(".nav-graph-detail-level").find("*").removeClass("active")
+    $(".nav-graph-full-tab").addClass("active")
+    $(".gauges").remove()
+    currentCreateFunction = ->
+      makeSvg(jsonAddress("full.json"))
+    currentCreateFunction()
+    $("[rel='tooltip']").tooltip()
+
   currentCreateFunction()
   $("[rel='tooltip']").tooltip()
   $("#revisions").on "revchange", (event) ->
