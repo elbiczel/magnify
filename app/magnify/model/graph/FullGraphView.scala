@@ -26,8 +26,8 @@ final class FullGraphView(graph: Graph) extends GraphView {
 
   private val imports =
     new OrFilterPipe[Edge](
-      new LabelFilterPipe("imports", Filter.EQUAL),
-      new LabelFilterPipe("package-imports", Filter.EQUAL),
+      new LabelFilterPipe("cls-imports-cls", Filter.EQUAL),
+      new LabelFilterPipe("pkg-imports-pkg", Filter.EQUAL),
       new LabelFilterPipe("cls-imports-pkg", Filter.EQUAL),
       new LabelFilterPipe("pkg-imports-cls", Filter.EQUAL),
       new LabelFilterPipe("in-package", Filter.EQUAL),

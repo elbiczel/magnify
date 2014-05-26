@@ -65,11 +65,11 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
           .transform(new AsVertex)
           .toList.toSet[Vertex]
       importsPkg <- getPackageClasses(pkg)
-          .out("imports")
+          .out("cls-imports-cls")
           .out("cls-in-pkg")
           .toList.toSeq.groupBy((v) => v).mapValues((seq) => seq.length)
     } {
-      val edge = addEdge(pkg, "package-imports", importsPkg._1)
+      val edge = addEdge(pkg, "pkg-imports-pkg", importsPkg._1)
       edge.setProperty("weight", importsPkg._2)
     }
     for {
@@ -79,7 +79,7 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
         .toList.toSet[Vertex]
       importsPkg <- new GremlinPipeline()
           .start(cls)
-          .out("imports")
+          .out("cls-imports-cls")
           .out("cls-in-pkg")
           .toList.toSeq.groupBy((v) => v).mapValues((seq) => seq.length)
     } {
@@ -93,7 +93,7 @@ final class RevisionGraph(override val graph: BlueprintsGraph) extends Graph wit
           .toList.toSet[Vertex]
       pkgImportingCls <- new GremlinPipeline()
           .start(cls)
-          .in("imports")
+          .in("cls-imports-cls")
           .out("cls-in-pkg")
           .toList.toSeq.groupBy((v) => v).mapValues((seq) => seq.length)
     } {

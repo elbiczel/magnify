@@ -145,7 +145,7 @@ private[features] final class GraphSources(
     val changedClassNames = classes.map(_.ast.className).toSet
     val classesImportingChanged = classesImporting(graph, changedClassNames, allClasses)
     val newClassesByOldName = classesImportingChanged.map { (v) =>
-      val allImported = v.getVertices(Direction.OUT, "imports").toSet
+      val allImported = v.getVertices(Direction.OUT, "cls-imports-cls").toSet
       val allImportedNames = allImported.map(_.getProperty[String]("name"))
       val changedImported = allImportedNames.filter(changedClassNames)
       (v -> changedImported)
@@ -155,7 +155,7 @@ private[features] final class GraphSources(
     addImportsFromNewClasses(graph, classes.map(_.ast), allClasses)
     newClassesByOldName.foreach { case (v, names) =>
       names.foreach { (clsName) =>
-        graph.addEdge(v, "imports", newClassesByName(clsName))
+        graph.addEdge(v, "cls-imports-cls", newClassesByName(clsName))
       }
     }
   }
@@ -183,7 +183,7 @@ private[features] final class GraphSources(
     graph.currentVertices
         .filter(hasInFilter)
         .has("kind", "class")
-        .in("imports")
+        .in("cls-imports-cls")
         .filter(HasInFilter("name", allClasses))
         .filter(NotFilter(hasInFilter))
         .dedup()
@@ -198,7 +198,7 @@ private[features] final class GraphSources(
       inVertex <- classesNamed(graph, inCls)
       outVertex <- classesNamed(graph, outCls)
     } {
-      graph.addEdge(outVertex, "imports", inVertex)
+      graph.addEdge(outVertex, "cls-imports-cls", inVertex)
     }
   }
 

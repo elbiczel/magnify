@@ -23,7 +23,7 @@ final class ClassImportsGraphView(graph: Graph) extends GraphView {
         .toList
 
   private val imports =
-    new LabelFilterPipe("imports", Filter.EQUAL)
+    new LabelFilterPipe("cls-imports-cls", Filter.EQUAL)
 }
 
 final class ClassImportsGraphViewFactory(revisionGraphFactory: RevisionGraphFactory)

@@ -16,32 +16,48 @@ $ ->
 
   defaultStrengths =
     "in-package": 1.0 # 0.5
-    "package-imports": 0.03 # 0.1
-    imports: 0.01
+    "pkg-imports-pkg": 0.03 # 0.1
+    "cls-imports-cls": 0.01
     calls: 0.01
   strengths = null
   strength = (link) -> strengths[link.kind]
 
   defaultLinkColors =
     "in-package": "#cc0000"
-    "package-imports": "#babdb6"
-    imports: "#d3d7df"
+    "pkg-imports-pkg": "#babdb6"
+    "cls-imports-cls": "#d3d7df"
     calls: "#fce94f"
+    "cls-in-pkg": "transparent"
+    "cls-imports-pkg": "#d3d7df"
+    "pkg-imports-cls": "#d3d7df"
   linkColors = null
   linkColor = (link) -> linkColors[link.kind]
 
   defaultLinkWidths =
     "in-package": () -> 1.5
-    "package-imports": (link) -> Math.min(Math.log(link.weight) / 3, 10)
-    imports: () -> 1
+    "pkg-imports-pkg": (link) -> Math.min((Math.log(link.weight) / 3) + 1.5, 10)
+    "cls-imports-cls": () -> 1
     calls: (link) -> Math.min(link.count / 10.0, 5)
+    "cls-in-pkg": () -> 0
+    "cls-imports-pkg": (link) -> Math.min((Math.log(link.weight) / 3) + 1, 10)
+    "pkg-imports-cls": (link) -> Math.min((Math.log(link.weight) / 3) + 1, 10)
   linkWidths = null
   linkWidth = (link) -> linkWidths[link.kind](link)
 
+  defaultLinkDistances =
+    "in-package": () -> 30
+    "pkg-imports-pkg": () -> 60
+    "cls-imports-cls": () -> 60
+    calls: () -> 60
+    "cls-in-pkg": () -> 15
+    "cls-imports-pkg": () -> 60
+    "pkg-imports-cls": () -> 60
+  linkDistances = null
+  linkDistance = (link) -> linkDistances[link.kind](link)
 
   defaultNodeSize =
     "package": 5
-    "class": 1
+    "class": 2
   kindNodeSize = (node) -> defaultNodeSize[node.kind]
   metricNodeSize = (metric) -> (node) -> 3 + Math.max(3, 100.0 * node["metric--" + metric])
   pageRankNodeSize = metricNodeSize("pr")
@@ -51,19 +67,36 @@ $ ->
     color = avgLocColor
     strengths =
       "in-package": defaultStrengths["in-package"]
-      "package-imports": defaultStrengths["package-imports"]
-      imports: defaultStrengths.imports
+      "pkg-imports-pkg": defaultStrengths["pkg-imports-pkg"]
+      "cls-imports-cls": defaultStrengths["cls-imports-cls"]
       calls: defaultStrengths.calls
+      "cls-in-pkg": defaultStrengths["cls-in-pkg"]
+      "cls-imports-pkg": defaultStrengths["cls-imports-pkg"]
+      "pkg-imports-cls": defaultStrengths["pkg-imports-cls"]
     linkColors =
       "in-package": defaultLinkColors["in-package"]
-      "package-imports": defaultLinkColors["package-imports"]
-      imports: defaultLinkColors.imports
+      "pkg-imports-pkg": defaultLinkColors["pkg-imports-pkg"]
+      "cls-imports-cls": defaultLinkColors["cls-imports-cls"]
       calls: defaultLinkColors.calls
+      "cls-in-pkg": defaultLinkColors["cls-in-pkg"]
+      "cls-imports-pkg": defaultLinkColors["cls-imports-pkg"]
+      "pkg-imports-cls": defaultLinkColors["pkg-imports-cls"]
     linkWidths =
       "in-package": defaultLinkWidths["in-package"]
-      "package-imports": defaultLinkWidths["package-imports"]
-      imports: defaultLinkWidths.imports
+      "pkg-imports-pkg": defaultLinkWidths["pkg-imports-pkg"]
+      "cls-imports-cls": defaultLinkWidths["cls-imports-cls"]
       calls: defaultLinkWidths.calls
+      "cls-in-pkg": defaultLinkWidths["cls-in-pkg"]
+      "cls-imports-pkg": defaultLinkWidths["cls-imports-pkg"]
+      "pkg-imports-cls": defaultLinkWidths["pkg-imports-cls"]
+    linkDistances =
+      "in-package": defaultLinkDistances["in-package"]
+      "pkg-imports-pkg": defaultLinkDistances["pkg-imports-pkg"]
+      "cls-imports-cls": defaultLinkDistances["cls-imports-cls"]
+      calls: defaultLinkDistances.calls
+      "cls-in-pkg": defaultLinkDistances["cls-in-pkg"]
+      "cls-imports-pkg": defaultLinkDistances["cls-imports-pkg"]
+      "pkg-imports-cls": defaultLinkDistances["pkg-imports-cls"]
     nodeR = pageRankNodeSize
   defaultMetrics()
 
@@ -72,10 +105,11 @@ $ ->
 
   force = d3.layout.force()
     .charge(-120)
-    .linkDistance(30)
+    .linkDistance(linkDistance)
     .linkStrength(strength)
     .size([width, height])
     .gravity(0.2)
+    .friction(0.9)
 
   svg = d3
     .select("#chart")
@@ -263,8 +297,8 @@ $ ->
           .style("stroke", linkColor)
           .style("stroke-width", linkWidth)
       force.linkStrength(strength).start()
-    onCheckLinkType(".check-pkg-imports", "package-imports")
-    onCheckLinkType(".check-imports", "imports")
+    onCheckLinkType(".check-pkg-imports", "pkg-imports-pkg")
+    onCheckLinkType(".check-imports", "cls-imports-cls")
     onCheckLinkType(".check-contains", "in-package")
     onCheckLinkType(".check-runtime", "calls")
 
@@ -272,8 +306,8 @@ $ ->
       $elem = $(selector)
       $elem.on "click", ->
         onCheckLinkType($elem, attr)
-    checkLinkType(".check-pkg-imports", "package-imports")
-    checkLinkType(".check-imports", "imports")
+    checkLinkType(".check-pkg-imports", "pkg-imports-pkg")
+    checkLinkType(".check-imports", "cls-imports-cls")
     checkLinkType(".check-contains", "in-package")
     checkLinkType(".check-runtime", "calls")
     onCheckColourType = (selectorOrElement) ->

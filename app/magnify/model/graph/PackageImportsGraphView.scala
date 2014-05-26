@@ -26,7 +26,7 @@ final class PackageImportsGraphView(graph: Graph) extends GraphView {
         .toList
 
   private val imports =
-    new LabelFilterPipe("package-imports", Filter.EQUAL)
+    new LabelFilterPipe("pkg-imports-pkg", Filter.EQUAL)
 }
 
 

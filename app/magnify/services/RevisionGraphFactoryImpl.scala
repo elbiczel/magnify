@@ -16,7 +16,7 @@ class RevisionGraphFactoryImpl(metrics: MetricsProvider[Graph, Graph, RevisionMe
 
   private val logger = Logger(classOf[RevisionGraphFactoryImpl].getSimpleName)
 
-  private val LABELS: Seq[String] = Seq("imports", "calls")
+  private val LABELS: Seq[String] = Seq("cls-imports-cls", "calls")
 
   private val versions: LoadingCache[(FullGraph, Option[String]), Graph] = CacheBuilder.newBuilder()
       .maximumSize(100)
