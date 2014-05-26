@@ -171,8 +171,9 @@ $ ->
         .links(json.edges)
         .start()
 
+      keyFunction = (d) -> [d.kind, d.source.name, d.target.name].join(",")
       link = svg.selectAll("line.link")
-        .data(json.edges, (d) -> d.source.name + "," + d.target.name)
+        .data(json.edges, keyFunction)
 
       # update
       #EMPTY

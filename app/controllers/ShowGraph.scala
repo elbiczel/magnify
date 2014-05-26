@@ -104,13 +104,16 @@ sealed class ShowGraph (
 
 
   private def json(graphView: GraphView): JsValue = {
-    val vertices = toMap(graphView.vertices)
+    val vertices = graphView.vertices
+    val serialized = toMap(vertices)
     val idByVertexName = (for {
       (vertex, index) <- vertices.zipWithIndex
-    } yield vertex("name") -> index).toMap
+    } yield vertexKey(vertex) -> index).toMap
     val edges = toMap(graphView.edges, idByVertexName)
-    JsObject(Seq("nodes" -> toJson(vertices), "edges" -> toJson(edges)))
+    JsObject(Seq("nodes" -> toJson(serialized), "edges" -> toJson(edges)))
   }
+
+  private def vertexKey(v: Vertex): String = v.getProperty[String]("kind") + ":" + v.getProperty[String]("name")
 
   private def toMap(vertices: Iterable[Vertex]): Seq[Map[String, String]] =
     for (vertex <- vertices.toSeq) yield {
@@ -138,5 +141,5 @@ sealed class ShowGraph (
         property(edge, "weight").mapValues(s => toJson(s))
 
   private def name(edge: Edge, direction: Direction): String =
-    edge.getVertex(direction).getProperty("name").toString
+    vertexKey(edge.getVertex(direction))
 }
