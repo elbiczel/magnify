@@ -7,34 +7,34 @@ $ ->
   badness = d3.scale.linear().domain([-1, 300]).range(["green", "red"])
 
   defaultNodeColor =
-    "package": "#000"
-    "class": "#555"
-  kindNodeColor = (node) -> defaultNodeColor[node.kind]
+    "package": () -> "#000"
+    "class": () -> "#555"
+  kindNodeColor = (node) -> defaultNodeColor[node.kind](node)
   metricNodeColor = (metric) -> (node) -> badness(node["metric--" + metric])
   avgLocColor = metricNodeColor("avg-loc")
   color = null
 
   defaultStrengths =
-    "in-package": 0.5 # 0.5
-    "pkg-imports-pkg": 0.03 # 0.1
-    "cls-imports-cls": 0.01
-    calls: 0.01
-    "cls-in-pkg": 1.0
-    "cls-imports-pkg": 0.0
-    "pkg-imports-cls": 0.0
+    "in-package": () -> 0.5 # 0.5
+    "pkg-imports-pkg": () -> 0.03 # 0.1
+    "cls-imports-cls": () -> 0.01
+    calls: () -> 0.01
+    "cls-in-pkg": () -> 1.0
+    "cls-imports-pkg": () -> 0.0
+    "pkg-imports-cls": () -> 0.0
   strengths = null
-  strength = (link) -> strengths[link.kind]
+  strength = (link) -> strengths[link.kind](link)
 
   defaultLinkColors =
-    "in-package": "#cc0000"
-    "pkg-imports-pkg": "#babdb6"
-    "cls-imports-cls": "#d3d7df"
-    calls: "#fce94f"
-    "cls-in-pkg": "transparent"
-    "cls-imports-pkg": "#d3d7df"
-    "pkg-imports-cls": "#d3d7df"
+    "in-package": () -> "#cc0000"
+    "pkg-imports-pkg": () -> "#babdb6"
+    "cls-imports-cls": () -> "#d3d7df"
+    calls: () -> "#fce94f"
+    "cls-in-pkg": () -> "transparent"
+    "cls-imports-pkg": () -> "#d3d7df"
+    "pkg-imports-cls": () -> "#d3d7df"
   linkColors = null
-  linkColor = (link) -> linkColors[link.kind]
+  linkColor = (link) -> linkColors[link.kind](link)
 
   defaultLinkWidths =
     "in-package": () -> 1.5
@@ -42,8 +42,8 @@ $ ->
     "cls-imports-cls": () -> 1
     calls: (link) -> Math.min(link.count / 10.0, 5)
     "cls-in-pkg": () -> 0
-    "cls-imports-pkg": (link) -> 0 # Math.min((Math.log(link.weight) / 3) + 1, 10)
-    "pkg-imports-cls": (link) -> 0 # Math.min((Math.log(link.weight) / 3) + 1, 10)
+    "cls-imports-pkg": () -> 0
+    "pkg-imports-cls": () -> 0
   linkWidths = null
   linkWidth = (link) -> linkWidths[link.kind](link)
 
@@ -59,9 +59,9 @@ $ ->
   linkDistance = (link) -> linkDistances[link.kind](link)
 
   defaultNodeSize =
-    "package": 5
-    "class": 2
-  kindNodeSize = (node) -> defaultNodeSize[node.kind]
+    "package": () -> 5
+    "class": () -> 2
+  kindNodeSize = (node) -> defaultNodeSize[node.kind](node)
   metricNodeSize = (metric) -> (node) -> 3 + Math.max(3, 100.0 * node["metric--" + metric])
   pageRankNodeSize = metricNodeSize("pr")
   nodeR = null
@@ -279,8 +279,8 @@ $ ->
         strengths[attr] = defaultStrengths[attr]
         linkWidths[attr] = defaultLinkWidths[attr]
       else
-        linkColors[attr] = "transparent"
-        strengths[attr] = 0
+        linkColors[attr] = () -> "transparent"
+        strengths[attr] = () -> 0
         linkWidths[attr] = () -> 0
       link
         .transition()
