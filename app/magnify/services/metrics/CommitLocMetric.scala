@@ -16,13 +16,17 @@ class CommitLocMetric extends FullGraphMetric {
         .sideEffect(new AggregatingMetricTransformation[Double](
       Direction.IN, "in-revision", "class", MetricNames.linesOfCode) {
           override def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
-            pipe.toList.toSeq.map(getMetricValue[Double](metricName, _)).sum
+            val nodes = pipe.toList.toSeq
+            val values = nodes.map(getMetricValue[Double](metricName, _))
+            val sum = values.sum
+            sum
           }
         }).sideEffect(new AggregatingMetricTransformation[Double](
       Direction.IN, "in-revision", "class", MetricNames.averageLinesOfCode) {
       override def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
-        val classMetrics = pipe.toList.toSeq.map(getMetricValue[Double](metricName, _))
-        Option(classMetrics).filter(_.size > 0).map(_.sum / classMetrics.size).getOrElse(0.0)
+        val nodes = pipe.toList.toSeq
+        val values = nodes.map(getMetricValue[Double](MetricNames.linesOfCode, _))
+        Option(values).filter(_.size > 0).map(_.sum / values.size).getOrElse(0.0)
       }
     }).iterate()
     graph

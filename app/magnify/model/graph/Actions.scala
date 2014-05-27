@@ -46,7 +46,8 @@ trait Actions {
     from.getPropertyKeys.foreach((key) => to.setProperty(key, from.getProperty(key)))
   }
 
-  final def getMetricValue[A](metricName: String, e: Element): A = e.getProperty[A]("metric--" + metricName)
+  final def getMetricValue[A](metricName: String, e: Element): A =
+    e.getProperty[A](MetricNames.propertyName(metricName))
 
   final def setMetricValue[A](metricName: String, e: Element, value: A): Unit =
     e.setProperty(MetricNames.propertyName(metricName), value)

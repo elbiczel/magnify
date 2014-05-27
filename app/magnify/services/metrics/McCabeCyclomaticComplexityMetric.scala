@@ -53,16 +53,20 @@ private[this] class AggregateMcCabeComplexityMetric(dir: Direction, label: Strin
 
   override def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
     val classes = pipe.toList.toSeq
-    val mcCabeComplexities = classes.map(getMetricValue[Double](metricName, _))
-    val weights = getWeights(classes)
-    val weightedComplexities = mcCabeComplexities.zip(weights).map { case (cc, weight) => cc * weight }
-    weightedComplexities.sum / weights.sum
+    if (classes.isEmpty) { 0.0 } else {
+      val mcCabeComplexities = classes.map(getMetricValue[Double](metricName, _))
+      if (mcCabeComplexities.sum == 0.0) { 0.0 } else {
+        val weights = getWeights(classes)
+        val weightedComplexities = mcCabeComplexities.zip(weights).map {case (cc, weight) => cc * weight}
+        weightedComplexities.sum / weights.sum
+      }
+    }
   }
 
   private def getWeights(classes: Seq[Vertex]): Seq[Double] =
     if (classes.forall(_.getPropertyKeys.contains(MetricNames.propertyName(MetricNames.pageRank)))) {
       classes.map(_.getProperty[String](MetricNames.propertyName(MetricNames.pageRank)).toDouble)
     } else {
-      classes.map(getMetricValue[Double](MetricNames.propertyName(MetricNames.linesOfCode), _))
+      classes.map(getMetricValue[Double](MetricNames.linesOfCode, _))
     }
 }

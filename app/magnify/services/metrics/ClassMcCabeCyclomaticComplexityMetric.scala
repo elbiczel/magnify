@@ -77,7 +77,7 @@ private[this] class McCabeCcVisitor extends VoidVisitorAdapter[Object] {
   // http://stackoverflow.com/questions/13571635
   def getComplexity: Double = {
     nextMethod()
-    if (methodsCC.isEmpty) { 1.0 } else {
+    if (methodsCC.isEmpty) { 0.0 } else {
       methodsCC.filter(_ >= 6).length * 100 / Math.sqrt(methodsCC.length)
     }
   }
