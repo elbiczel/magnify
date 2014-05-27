@@ -152,6 +152,32 @@ $ ->
       .attr("cx", (d) -> d.x)
       .attr("cy", (d) -> d.y)
 
+  packages = {}
+  classesPerPackage = {}
+
+  setExpanded = (d, expanded) ->
+    d = if (typeof d) == "string" then packages[d] else d
+    d.expanded = expanded
+    cls.visible = expanded for cls in (classesPerPackage[d.name] || [])
+
+  dblclick = (d) ->
+    if (d.kind == "package")
+      if !classesPerPackage[d.name] or !classesPerPackage[d.name].length then return
+      setExpanded(d, true)
+    else if (d.kind == "class")
+      setExpanded(d["parent-pkg-name"], false)
+    node
+      .transition()
+        .duration(750)
+        .attr("r", nodeR)
+        .style("fill", color)
+    link
+      .transition()
+        .duration(750)
+          .style("stroke-width", linkWidth)
+          .style("stroke", linkColor)
+    force.linkStrength(strength).resume()
+
   makeSvg = (jsonAddress) ->
     d3.json jsonAddress, (json) ->
       oldByName = {}
@@ -169,6 +195,16 @@ $ ->
         .links(json.edges)
         .start()
 
+      packages = {}
+      classesPerPackage = {}
+      pkgs = json.nodes.filter((d) -> d.kind == "package")
+      packages[d.name] = d for d in pkgs
+      updateClassPerPackage = (cls) ->
+        if !classesPerPackage[cls["parent-pkg-name"]] then classesPerPackage[cls["parent-pkg-name"]] = []
+        classesPerPackage[cls["parent-pkg-name"]].push(cls)
+      clses = json.nodes.filter((d) -> d.kind == "class")
+      updateClassPerPackage(cls) for cls in clses
+
       keyFunction = (d) -> [d.kind, d.source.name, d.target.name].join(",")
       link = svg.selectAll("line.link")
         .data(json.edges, keyFunction)
@@ -180,7 +216,7 @@ $ ->
       enterLink = link.enter()
         .append("svg:line")
         .attr("class", "link")
-        .attr("marker-end", "url(#arrow-head)")
+        #.attr("marker-end", "url(#arrow-head)")
         .style("stroke-width", 1e-6)
         .style("fill-opacity", 1e-6)
 
@@ -212,6 +248,7 @@ $ ->
         .attr("class", "node")
         .attr("r", 1e-6)
         .style("fill-opacity", 1e-6)
+        .on("dblclick", dblclick)
         .call(force.drag)
       enterNode
         .append("title")
