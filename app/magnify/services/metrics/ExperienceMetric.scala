@@ -4,7 +4,7 @@ import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
 import com.google.inject.name.Named
-import com.tinkerpop.blueprints.{Direction, Vertex}
+import com.tinkerpop.blueprints.{Edge, Direction, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import magnify.features.{LoggedFunction, MetricNames, RevisionMetric}
 import magnify.model.graph.{AsVertex, FullGraph, Graph}
@@ -75,7 +75,8 @@ private[this] object ExperienceTransformation extends RevisionTransformation[Map
   override def metric(
       revision: Vertex,
       current: Vertex,
-      oParent: Option[Vertex]): Map[String, Double] = {
+      oParent: Option[Vertex],
+      oCommit: Option[Edge]): Map[String, Double] = {
     val authorId = getName(revision)
     val prevExperience: Map[String, Double] = oParent
         .map(getMetricValue[Map[String, Double]](metricName, _))

@@ -4,7 +4,7 @@ import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
 import com.google.inject.name.Named
-import com.tinkerpop.blueprints.{Direction, Vertex}
+import com.tinkerpop.blueprints.{Direction, Edge, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import magnify.features.{LoggedFunction, MetricNames, RevisionMetric}
 import magnify.model.graph.{AsVertex, FullGraph, Graph}
@@ -17,7 +17,7 @@ abstract class AggregatedContributionMetric
 
   override def aggregateMetric(g: FullGraph): FullGraph = {
     g.vertices.has("kind", "commit").transform(new AsVertex)
-        .sideEffect(new AggregateAggrContributionExperience(Direction.IN, "in-revision", "class"))
+        .sideEffect(new AggregateAggrContribution(Direction.IN, "in-revision", "class"))
         .iterate()
     g
   }
@@ -38,7 +38,7 @@ class RevisionAggregatedContributionMetric extends RevisionMetric {
 
   override def apply(graph: Graph): Graph = {
     graph.vertices.has("kind", "package").transform(new AsVertex)
-        .sideEffect(new AggregateAggrContributionExperience(Direction.IN, "cls-in-pkg", "class"))
+        .sideEffect(new AggregateAggrContribution(Direction.IN, "cls-in-pkg", "class"))
         .iterate()
     graph
   }
@@ -53,19 +53,22 @@ class LoggedRevisionAggregatedContributionMetric
 
 private[this] object AggregateContributionTransformation extends RevisionTransformation[Map[String, Double]] {
 
-  override def metric(revision: Vertex, current: Vertex, oParent: Option[Vertex]): Map[String, Double] = {
+  override def metric(
+      revision: Vertex, current: Vertex, oParent: Option[Vertex], oCommit: Option[Edge]): Map[String, Double] = {
     val authorId = getName(revision)
-    val prevExperience: Map[String, Double] = oParent
+    val prevContribution: Map[String, Double] = oParent
         .map(getMetricValue[Map[String, Double]](metricName, _))
         .getOrElse(Map[String, Double]())
-    val newAuthorExperience =
-      prevExperience.getOrElse(authorId, 0.0) + getMetricValue[Double](MetricNames.contribution, current)
-    val updatedExperience = prevExperience.updated(authorId, newAuthorExperience)
-    updatedExperience
+    val newAuthorContrib = prevContribution.getOrElse(authorId, 0.0) +
+        oCommit.map((edge) => getMetricValue[Double](MetricNames.contribution, edge)).getOrElse {
+          getMetricValue[Double](MetricNames.linesOfCode, current) + 5
+        }
+    val updatedContribution = prevContribution.updated(authorId, newAuthorContrib)
+    updatedContribution
   }
 }
 
-private[this] class AggregateAggrContributionExperience(
+private[this] class AggregateAggrContribution(
     dir: Direction, label: String, kind: String)
   extends AggregatingMetricTransformation[Map[String, Double]](
     dir, label, kind, MetricNames.aggregatedContribution) {

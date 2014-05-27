@@ -4,7 +4,7 @@ import java.lang
 
 import scala.concurrent.ExecutionContext
 
-import com.tinkerpop.blueprints.Vertex
+import com.tinkerpop.blueprints.{Edge, Vertex}
 import com.tinkerpop.pipes.PipeFunction
 import com.tinkerpop.pipes.branch.LoopPipe.LoopBundle
 import magnify.features.FullGraphMetric
@@ -41,18 +41,20 @@ trait RevisionTransformation[A] extends PipeFunction[Vertex, Vertex] with Action
     val revSha = revision.getProperty[String]("rev")
 
     override def compute(v: Vertex): Unit = {
-      val wasUpdated = getPrevCommit(v).map(_.getProperty[String]("rev") == revSha).getOrElse(true)
-      val value = metric(revision, v, getPrevRevision(v), wasUpdated)
+      val edge = getPrevCommit(v)
+      val wasUpdated = edge.map(_.getProperty[String]("rev") == revSha).getOrElse(true)
+      val value = metric(revision, v, getPrevRevision(v), edge, wasUpdated)
       setMetricValue(metricName, v, value)
     }
   }
 
-  def metric(revision: Vertex, current: Vertex, oParent: Option[Vertex], wasUpdated: Boolean): A =
+  def metric(
+      revision: Vertex, current: Vertex, oParent: Option[Vertex], commitE: Option[Edge], wasUpdated: Boolean): A =
     if (!wasUpdated) { getMetricValue(metricName, oParent.get) } else {
-      metric(revision, current, oParent)
+      metric(revision, current, oParent, commitE)
     }
 
-  def metric(revision: Vertex, current: Vertex, oParent: Option[Vertex]): A
+  def metric(revision: Vertex, current: Vertex, oParent: Option[Vertex], commitE: Option[Edge]): A
 }
 
 private[this] object HasNextFilter extends PipeFunction[LoopBundle[Vertex], lang.Boolean] {
