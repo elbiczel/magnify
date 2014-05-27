@@ -11,6 +11,7 @@ GET         /project/:name/pkgImports.json                    controllers.ShowGr
 GET         /project/:name/clsImports.json                    controllers.ShowGraph.showClsImportsJson(name: String)
 GET         /project/:name/committers.json                    controllers.ShowGraph.committers(name: String)
 GET         /project/:name/revisions.json                     controllers.ShowGraph.revisions(name: String)
+GET         /project/:name/revision.json                      controllers.ShowGraph.revision(name: String)
 GET         /project/:name/upload-call-count.html             controllers.UploadCallCount.form(name: String)
 POST        /project/:name/upload-call-count.html             controllers.UploadCallCount.upload(name: String)
 GET         /project/upload.html                              controllers.ZipSourcesUpload.form

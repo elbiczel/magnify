@@ -4,7 +4,7 @@ import com.google.inject.AbstractModule
 import com.google.inject.multibindings.Multibinder
 import magnify.common.reflect._
 import magnify.features.{AstMetric, FullGraphMetric, MetricNames, RevisionMetric}
-import magnify.model.graph.{FullGraph, Graph}
+import magnify.model.graph.Graph
 
 private[services] class MetricsModule extends AbstractModule {
   override def configure(): Unit = {
@@ -13,7 +13,7 @@ private[services] class MetricsModule extends AbstractModule {
     metricsBinder.addBinding().toConstructor(constructor[LoggedContributionMetric])
     metricsBinder.addBinding().toConstructor(constructor[LoggedAggregatedContributionMetric])
     metricsBinder.addBinding().toConstructor(constructor[LoggedMcCabeCyclomaticComplexityMetric])
-    metricsBinder.addBinding().toConstructor(constructor[DummyLocMetric])
+    metricsBinder.addBinding().toConstructor(constructor[CommitLocMetric])
     val pkgMetricsBinder = Multibinder.newSetBinder(binder(), classOf[RevisionMetric])
     pkgMetricsBinder.addBinding().toConstructor(constructor[LoggedRevisionLocMetric])
     pkgMetricsBinder.addBinding().toConstructor(constructor[LoggedRevisionAvgLocMetric])
@@ -26,12 +26,6 @@ private[services] class MetricsModule extends AbstractModule {
     val astMetricsBinder = Multibinder.newSetBinder(binder(), classOf[AstMetric])
     astMetricsBinder.addBinding().toConstructor(constructor[ClassMcCabeCyclomaticComplexityMetric])
   }
-}
-
-private[this] final class DummyLocMetric extends FullGraphMetric {
-  override def name: String = MetricNames.linesOfCode
-
-  override def apply(g: FullGraph): FullGraph = g
 }
 
 private[this] final class DummyRevisionLocMetric extends RevisionMetric {

@@ -85,7 +85,16 @@ sealed class ShowGraph (
 
   def revisions(name: String) = Action { implicit request =>
     withGraph(name) { graph =>
-      Ok(toJson(Revisions(request.getQueryString("rev").filter(_.trim.nonEmpty), graph)))
+      Ok(toJson(Revisions(
+        request.getQueryString("rev").filter(_.trim.nonEmpty),
+        graph,
+        request.getQueryString("detail").filter(_.trim.nonEmpty).isDefined)))
+    }
+  }
+
+  def revision(name: String) = Action { implicit request =>
+    withGraph(name) { graph =>
+      Ok(toJson(Revision(request.getQueryString("rev").filter(_.trim.nonEmpty), graph)))
     }
   }
 
