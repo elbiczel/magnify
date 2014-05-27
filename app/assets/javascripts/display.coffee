@@ -49,7 +49,11 @@ $ ->
     "cls-imports-pkg": (link) -> if link.source.visible and !link.target.expanded then 1 else 0
     "pkg-imports-cls": (link) -> if !link.source.expanded and link.target.visible then 1 else 0
   linkWidths = null
-  linkWidth = (link) -> linkWidths[link.kind](link)
+  linkWidth = (link) ->
+    if !linkWidth.withSelected or link.source.selected or link.target.selected
+      linkWidths[link.kind](link)
+    else
+      0
 
   defaultLinkDistances =
     "in-package": () -> 30
@@ -73,6 +77,12 @@ $ ->
       if node.visible then 3 + Math.max(3, 100.0 * node["metric--" + metric]) else 0
   pageRankNodeSize = metricNodeSize("pr")
   nodeR = null
+  nodeSize = (node) ->
+    if !nodeSize.withSelected or node.selected or node.neighbour
+      nodeR(node)
+    else
+      0
+
 
   defaultMetrics = () ->
     color = avgLocColor
@@ -169,7 +179,7 @@ $ ->
     node
       .transition()
         .duration(750)
-        .attr("r", nodeR)
+        .attr("r", nodeSize)
         .style("fill", color)
     link
       .transition()
@@ -177,6 +187,39 @@ $ ->
           .style("stroke-width", linkWidth)
           .style("stroke", linkColor)
     force.linkStrength(strength).resume()
+
+
+
+  click = (() ->
+    selectedNode = null
+    (d) ->
+      if d3.event.defaultPrevented then return
+      if d == selectedNode
+        d.selected = false
+        selectedNode = null
+        linkWidth.withSelected = false
+        nodeSize.withSelected = false
+        neighbour.neighbour = false for neighbour in force.nodes()
+      else
+        if selectedNode
+          selectedNode.selected = false
+        d.selected = true
+        selectedNode = d
+        linkWidth.withSelected = true
+        nodeSize.withSelected = true
+        links = force.links().filter((link) -> link.source == d or link.target == d)
+        neighbours = links.map((link) -> if link.source == d then link.target else link.source)
+        neighbour.neighbour = true for neighbour in neighbours
+      link
+        .transition()
+          .duration(750)
+          .style("stroke-width", linkWidth)
+      node
+        .transition()
+          .duration(750)
+          .attr("r", nodeSize))()
+
+
 
   makeSvg = (jsonAddress) ->
     d3.json jsonAddress, (json) ->
@@ -249,6 +292,7 @@ $ ->
         .attr("r", 1e-6)
         .style("fill-opacity", 1e-6)
         .on("dblclick", dblclick)
+        .on("click", click)
         .call(force.drag)
       enterNode
         .append("title")
@@ -259,7 +303,7 @@ $ ->
         .style("fill", color)
         .transition()
           .duration(750)
-          .attr("r", nodeR)
+          .attr("r", nodeSize)
           .style("fill-opacity", 1)
 
 
@@ -374,7 +418,7 @@ $ ->
       node
         .transition()
           .duration(750)
-          .attr("r", nodeR)
+          .attr("r", nodeSize)
 
     onCheckNodeSize("""input[name="node-size"]:checked""")
     $("""input[name="node-size"]""").on "click", ->
