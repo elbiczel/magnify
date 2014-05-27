@@ -15,13 +15,13 @@ $ ->
   color = null
 
   defaultStrengths =
-    "in-package": () -> 0.5 # 0.5
-    "pkg-imports-pkg": () -> 0.03 # 0.1
-    "cls-imports-cls": () -> 0.01
+    "in-package": () -> 0.5
+    "pkg-imports-pkg": (link) -> if !link.source.expanded and !link.target.expanded then 0.03 else 0
+    "cls-imports-cls": (link) -> if link.source.visible and link.target.visible then 0.01 else 0
     calls: () -> 0.01
-    "cls-in-pkg": () -> 1.0
-    "cls-imports-pkg": () -> 0.0
-    "pkg-imports-cls": () -> 0.0
+    "cls-in-pkg": (link) -> if link.target.expanded then 1.0 else 0.0
+    "cls-imports-pkg": (link) -> if link.source.visible and !link.target.expanded then 0.01 else 0
+    "pkg-imports-cls": (link) -> if !link.source.expanded and link.target.visible then 0.01 else 0
   strengths = null
   strength = (link) -> strengths[link.kind](link)
 
@@ -38,12 +38,16 @@ $ ->
 
   defaultLinkWidths =
     "in-package": () -> 1.5
-    "pkg-imports-pkg": (link) -> Math.min((Math.log(link.weight) / 3) + 1.5, 10)
-    "cls-imports-cls": () -> 1
+    "pkg-imports-pkg": (link) ->
+      if !link.source.expanded and !link.target.expanded
+        Math.min((Math.log(link.weight) / 3) + 1.5, 10)
+      else
+        0.5
+    "cls-imports-cls": (link) -> if link.source.visible and link.target.visible then 1 else 0
     calls: (link) -> Math.min(link.count / 10.0, 5)
     "cls-in-pkg": () -> 0
-    "cls-imports-pkg": () -> 0
-    "pkg-imports-cls": () -> 0
+    "cls-imports-pkg": (link) -> if link.source.visible and !link.target.expanded then 0.01 else 0
+    "pkg-imports-cls": (link) -> if !link.source.expanded and link.target.visible then 0.01 else 0
   linkWidths = null
   linkWidth = (link) -> linkWidths[link.kind](link)
 
@@ -59,10 +63,14 @@ $ ->
   linkDistance = (link) -> linkDistances[link.kind](link)
 
   defaultNodeSize =
-    "package": () -> 5
-    "class": () -> 2
+    "package": (node) -> if !node.expanded then 5 else 1e-6
+    "class": (node) -> if node.visible then 3 else 0
   kindNodeSize = (node) -> defaultNodeSize[node.kind](node)
-  metricNodeSize = (metric) -> (node) -> 3 + Math.max(3, 100.0 * node["metric--" + metric])
+  metricNodeSize = (metric) -> (node) ->
+    if (node.kind == "package")
+      if !node.expanded then 3 + Math.max(3, 100.0 * node["metric--" + metric]) else 1e-6
+    else if (node.kind == "class")
+      if node.visible then 3 + Math.max(3, 100.0 * node["metric--" + metric]) else 0
   pageRankNodeSize = metricNodeSize("pr")
   nodeR = null
 
