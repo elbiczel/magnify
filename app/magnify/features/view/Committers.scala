@@ -1,4 +1,4 @@
-package controllers
+package magnify.features.view
 
 import scala.collection.JavaConversions._
 

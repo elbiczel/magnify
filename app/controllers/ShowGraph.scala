@@ -6,6 +6,7 @@ import com.google.inject.TypeLiteral
 import com.tinkerpop.blueprints.{Graph => _, _}
 import com.tinkerpop.blueprints.Direction._
 import magnify.features.{MetricNames, Sources}
+import magnify.features.view.{Committers, Revision, Revisions}
 import magnify.model.graph._
 import magnify.modules.inject
 import play.api.libs.json._

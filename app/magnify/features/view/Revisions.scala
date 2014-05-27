@@ -1,7 +1,6 @@
-package controllers
+package magnify.features.view
 
 import java.text.SimpleDateFormat
-import java.util.Date
 
 import magnify.model.graph.FullGraph
 
