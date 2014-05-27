@@ -189,10 +189,8 @@ $ ->
     force.linkStrength(strength).resume()
 
 
-
-  click = (() ->
-    selectedNode = null
-    (d) ->
+  selectedNode = null
+  click = (d) ->
       if d3.event.defaultPrevented then return
       if d == selectedNode
         d.selected = false
@@ -217,7 +215,7 @@ $ ->
       node
         .transition()
           .duration(750)
-          .attr("r", nodeSize))()
+          .attr("r", nodeSize)
 
 
 
@@ -232,7 +230,19 @@ $ ->
           node.y = old.y
           node.px = old.px
           node.py = old.py
+          node.visible = old.visible
+          node.expanded = old.expanded
+          node.selected = old.selected
+          node.neighbour = old.neighbour
+          if (node.selected)
+            selectedNode = node
+
       updateNewNode node for node in json.nodes
+      if selectedNode and !json.nodes.some((node) -> node.selected)
+        selectedNode = null
+        node.neighbour = false for node in json.nodes
+        linkWidth.withSelected = false
+        nodeSize.withSelected = false
       force
         .nodes(json.nodes)
         .links(json.edges)
