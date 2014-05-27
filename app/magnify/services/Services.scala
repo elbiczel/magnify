@@ -12,6 +12,7 @@ import magnify.features._
 import magnify.model.graph.{FullGraph, Graph}
 import magnify.services.imports.AstBuilder
 import magnify.services.metrics._
+import com.tinkerpop.blueprints.Vertex
 
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
@@ -30,7 +31,7 @@ final class Services extends AbstractModule {
     bind(classOf[RevisionGraphFactory]).toConstructor(constructor[RevisionGraphFactoryImpl])
     bind(new TypeLiteral[MetricsProvider[FullGraph, FullGraph, FullGraphMetric]]() {})
         .toConstructor(constructor[FullGraphDependenciesResolvedMetricsProvider])
-    bind(new TypeLiteral[MetricsProvider[Graph, Graph, RevisionMetric]]() {})
+    bind(new TypeLiteral[MetricsProvider[(Graph, Vertex), Graph, RevisionMetric]]() {})
         .toConstructor(constructor[RevisionDependenciesResolvedMetricsProvider])
     bind(new TypeLiteral[MetricsProvider[TypeDeclaration, AnyRef, AstMetric]]() {})
         .toConstructor(constructor[AstDependenciesResolvedMetricsProvider])

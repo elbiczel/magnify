@@ -28,21 +28,54 @@ class ContributionMetric extends FullGraphMetric with Actions {
 
 class LoggedContributionMetric extends ContributionMetric with LoggedFunction[FullGraph, FullGraph]
 
-class RevisionContributionMetric extends RevisionMetric {
+class RevisionContributionMetric extends RevisionMetric with Actions {
 
   val logger = Logger(classOf[RevisionContributionMetric].getSimpleName)
 
-  override def apply(g: Graph): Graph = {
-//    g.vertices.has("kind", "package").transform(new AsVertex)
-//        .sideEffect(new GetAggregatedContribution(Direction.IN, "cls-in-pkg", "class"))
-//        .iterate()
+
+  override def apply(p: (Graph, Vertex)): Graph = {
+    val g = p._1
+    val revVertex = p._2
+    val contributionByClass = getRevisionClasses(revVertex)
+        .transform(new PipeFunction[Vertex, (String, Double)] {
+      override def compute(v: Vertex): (String, Double) = {
+        val inCommit = v.getEdges(Direction.IN, "commit").toSeq
+        val contrib = if (!inCommit.isEmpty) {
+          val commitE = inCommit.head
+          if (commitE.getProperty[String]("rev") == v.getProperty[String]("rev")) {
+            getMetricValue[Double](MetricNames.contribution, inCommit.head)
+          } else {
+            0.0
+          }
+        } else {
+          getMetricValue[Double](MetricNames.linesOfCode, v) + 5
+        }
+        (v.getProperty[String]("name") -> contrib)
+      }
+    }).toList.toMap
+    g.vertices.has("kind", "class").transform(new AsVertex)
+        .sideEffect(new PipeFunction[Vertex, Double] {
+          override def compute(v: Vertex): Double = {
+            val contrib = contributionByClass(v.getProperty[String]("name"))
+            setMetricValue(name, v, contrib)
+            contrib
+          }
+        }).iterate()
+    g.vertices.has("kind", "package").transform(new AsVertex).sideEffect(
+      new AggregatingMetricTransformation[Double](Direction.IN, "cls-in-pkg", "class", name) {
+        override def metricValue(pipe: GremlinPipeline[Vertex, Vertex]): Double = {
+          pipe.toList.toSeq.map(getMetricValue[Double](name, _)).sum
+        }
+      }).iterate()
     g
   }
+
+  override final def apply(g: Graph): Graph = ???
 
   override final val name: String = MetricNames.contribution
 }
 
-class LoggedRevisionContributionMetric extends RevisionContributionMetric with LoggedFunction[Graph, Graph]
+class LoggedRevisionContributionMetric extends RevisionContributionMetric with LoggedFunction[(Graph, Vertex), Graph]
 
 private[this] class GetCommitContribution extends PipeFunction[Vertex, Double] with Actions {
   override def compute(v: Vertex): Double = {

@@ -11,7 +11,7 @@ import magnify.features.{MetricsProvider, RevisionGraphFactory, RevisionMetric}
 import magnify.model.graph.{Actions, FullGraph, Graph, RevisionGraph}
 import play.api.Logger
 
-class RevisionGraphFactoryImpl(metrics: MetricsProvider[Graph, Graph, RevisionMetric])
+class RevisionGraphFactoryImpl(metrics: MetricsProvider[(Graph, Vertex), Graph, RevisionMetric])
     extends RevisionGraphFactory with Actions {
 
   private val logger = Logger(classOf[RevisionGraphFactoryImpl].getSimpleName)
@@ -63,7 +63,7 @@ class RevisionGraphFactoryImpl(metrics: MetricsProvider[Graph, Graph, RevisionMe
       revGraph.addPackageImports()
       logger.info("Add package Imports finished: " + System.nanoTime())
       metrics().foldLeft(revGraph.asInstanceOf[Graph]) { case (graph, metric) =>
-        metric(graph)
+        metric(graph, revVertex)
       }
     }
   })

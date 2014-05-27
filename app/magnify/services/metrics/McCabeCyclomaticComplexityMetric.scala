@@ -45,7 +45,7 @@ class RevisionMcCabeCyclomaticComplexityMetric extends RevisionMetric {
 }
 
 class LoggedRevisionMcCabeCyclomaticComplexityMetric
-    extends RevisionMcCabeCyclomaticComplexityMetric with LoggedFunction[Graph, Graph]
+    extends RevisionMcCabeCyclomaticComplexityMetric with LoggedFunction[(Graph, Vertex), Graph]
 
 private[this] class AggregateMcCabeComplexityMetric(dir: Direction, label: String, kind: String)
     extends AggregatingMetricTransformation[Double](

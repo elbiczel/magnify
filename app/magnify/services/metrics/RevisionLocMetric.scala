@@ -25,4 +25,4 @@ class RevisionLocMetric extends RevisionMetric with Actions {
   override final val name: String = MetricNames.linesOfCode
 }
 
-class LoggedRevisionLocMetric extends RevisionLocMetric with LoggedFunction[Graph, Graph]
+class LoggedRevisionLocMetric extends RevisionLocMetric with LoggedFunction[(Graph, Vertex), Graph]

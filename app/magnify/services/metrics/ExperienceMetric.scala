@@ -49,7 +49,7 @@ class RevisionExperienceMetric extends RevisionMetric {
   override final val isSerializable: Boolean = false
 }
 
-class LoggedRevisionExperienceMetric extends RevisionExperienceMetric with LoggedFunction[Graph, Graph]
+class LoggedRevisionExperienceMetric extends RevisionExperienceMetric with LoggedFunction[(Graph, Vertex), Graph]
 
 private[this] class GetAggregatedExperience(dir: Direction, label: String, kind: String)
     extends AggregatingMetricTransformation[Map[String, Double]](dir, label, kind, MetricNames.experience) {

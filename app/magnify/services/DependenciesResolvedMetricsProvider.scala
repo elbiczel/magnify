@@ -6,6 +6,7 @@ import scala.collection.JavaConversions._
 import japa.parser.ast.body.TypeDeclaration
 import magnify.features._
 import magnify.model.graph.{FullGraph, Graph}
+import com.tinkerpop.blueprints.Vertex
 
 sealed abstract class DependenciesResolvedMetricsProvider[A, B, C <: Metric[A, B]](
     metrics: java.util.Set[C])
@@ -44,7 +45,7 @@ class FullGraphDependenciesResolvedMetricsProvider(
 
 class RevisionDependenciesResolvedMetricsProvider(
     metrics: java.util.Set[RevisionMetric])
-    extends DependenciesResolvedMetricsProvider[Graph, Graph, RevisionMetric](metrics)
+    extends DependenciesResolvedMetricsProvider[(Graph, Vertex), Graph, RevisionMetric](metrics)
 
 class AstDependenciesResolvedMetricsProvider(
     metrics: java.util.Set[AstMetric])

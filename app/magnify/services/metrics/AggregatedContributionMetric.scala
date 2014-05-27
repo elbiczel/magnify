@@ -49,7 +49,7 @@ class RevisionAggregatedContributionMetric extends RevisionMetric {
 }
 
 class LoggedRevisionAggregatedContributionMetric
-    extends RevisionAggregatedContributionMetric with LoggedFunction[Graph, Graph]
+    extends RevisionAggregatedContributionMetric with LoggedFunction[(Graph, Vertex), Graph]
 
 private[this] object AggregateContributionTransformation extends RevisionTransformation[Map[String, Double]] {
 

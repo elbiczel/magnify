@@ -28,4 +28,4 @@ class RevisionAvgLocMetric extends RevisionMetric with Actions {
   override final val dependencies: Set[String] = Set(MetricNames.linesOfCode)
 }
 
-class LoggedRevisionAvgLocMetric extends RevisionAvgLocMetric with LoggedFunction[Graph, Graph]
+class LoggedRevisionAvgLocMetric extends RevisionAvgLocMetric with LoggedFunction[(Graph, Vertex), Graph]
