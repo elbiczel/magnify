@@ -181,6 +181,11 @@ RevChart.prototype.mousemove = function() {
       if (rupx != 0) {
         var changex, new_domain;
         changex = self.downx / rupx;
+        if (changex > 1) {
+          changex *= 1.003;
+        } else {
+          changex *= 0.997;
+        }
         var newxaxis2 = new Date(xaxis1.getTime() + (xextent * changex));
         new_domain = [xaxis1, newxaxis2];
         self.x.domain(new_domain);
