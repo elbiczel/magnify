@@ -41,7 +41,6 @@ var createRevElement = function(revMap, classes, $revisions) {
     if ($this.attr("id") !== $active.attr("id")) {
       $active.removeClass("active");
       $this.addClass("active");
-      $revisions.trigger("revchange")
     }
   });
   elem.popover({
@@ -55,11 +54,6 @@ var createRevElement = function(revMap, classes, $revisions) {
     elem = elem.addClass(classes[i]);
   }
   return elem
-};
-
-var getActiveSha = function() {
-  var activeElemId = $('.revision.active').attr("id");
-  return (activeElemId && activeElemId.split("_")[1]) || "";
 };
 
 $(function() {

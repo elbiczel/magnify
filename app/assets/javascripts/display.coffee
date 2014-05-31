@@ -1,8 +1,12 @@
 $ ->
-  currentCreateFunction = ->
-    makeSvg(jsonAddress("packages.json"))
-  jsonAddress = (jsonAddress) ->
-    jsonAddress + "?rev=" + getActiveSha();
+  jsonAddress = (address, opt_sha) ->
+    if opt_sha
+      address + "?rev=" + opt_sha
+    else
+      address
+
+  currentCreateFunction = (opt_sha) ->
+    makeSvg(jsonAddress("packages.json", opt_sha))
 
   badness = d3.scale.linear().domain([-1, 300]).range(["green", "red"])
 
@@ -433,8 +437,8 @@ $ ->
     onCheckNodeSize("""input[name="node-size"]:checked""")
     $("""input[name="node-size"]""").on "click", ->
       onCheckNodeSize($(this))
-    currentCreateFunction = ->
-      makeSvg(jsonAddress("custom.json"))
+    currentCreateFunction = (opt_sha) ->
+      makeSvg(jsonAddress("custom.json", opt_sha))
     currentCreateFunction()
 
   $(".packages-button").on "click", (event) -> if (!$(".nav-graph-packages-tab").hasClass("active"))
@@ -442,8 +446,8 @@ $ ->
     $(".nav-graph-detail-level").find("*").removeClass("active")
     $(".nav-graph-packages-tab").addClass("active")
     $(".gauges").remove()
-    currentCreateFunction = ->
-      makeSvg(jsonAddress("packages.json"))
+    currentCreateFunction = (opt_sha) ->
+      makeSvg(jsonAddress("packages.json", opt_sha))
     currentCreateFunction()
     $("[rel='tooltip']").tooltip()
 
@@ -452,8 +456,8 @@ $ ->
     $(".nav-graph-detail-level").find("*").removeClass("active")
     $(".nav-graph-package-imports-tab").addClass("active")
     $(".gauges").remove()
-    currentCreateFunction = ->
-     makeSvg(jsonAddress("pkgImports.json"))
+    currentCreateFunction = (opt_sha) ->
+     makeSvg(jsonAddress("pkgImports.json", opt_sha))
     currentCreateFunction()
     $("[rel='tooltip']").tooltip()
 
@@ -462,8 +466,8 @@ $ ->
     $(".nav-graph-detail-level").find("*").removeClass("active")
     $(".nav-graph-class-imports-tab").addClass("active")
     $(".gauges").remove()
-    currentCreateFunction = ->
-      makeSvg(jsonAddress("clsImports.json"))
+    currentCreateFunction = (opt_sha) ->
+      makeSvg(jsonAddress("clsImports.json", opt_sha))
     currentCreateFunction()
     $("[rel='tooltip']").tooltip()
 
@@ -472,13 +476,13 @@ $ ->
     $(".nav-graph-detail-level").find("*").removeClass("active")
     $(".nav-graph-full-tab").addClass("active")
     $(".gauges").remove()
-    currentCreateFunction = ->
-      makeSvg(jsonAddress("full.json"))
+    currentCreateFunction = (opt_sha) ->
+      makeSvg(jsonAddress("full.json", opt_sha))
     currentCreateFunction()
     $("[rel='tooltip']").tooltip()
 
   currentCreateFunction()
   $("[rel='tooltip']").tooltip()
-  $("#revisions").on "revchange", (event) ->
-    currentCreateFunction()
+  $("#revGraph").on "revchange", (event, sha) ->
+    currentCreateFunction(sha)
 

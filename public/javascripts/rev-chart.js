@@ -154,7 +154,7 @@ RevChart.prototype.datapoint_drag = function() {
   return function(d) {
     document.onselectstart = function() { return false; };
     self.selected = d;
-    $(self.chart).trigger("revchange");
+    $(self.chart).trigger("revchange", d.id);
     self.update();
   }
 };

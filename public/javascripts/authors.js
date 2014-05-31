@@ -11,8 +11,8 @@ var renderAuthors = function() {
     }
     setActiveAuthors();
   });
-  $("#revisions").on("revchange", function authorsRevChangeHandler() {
-    setActiveAuthors();
+  $("#revGraph").on("revchange", function authorsRevChangeHandler(e, sha) {
+    setActiveAuthors(sha);
   });
 };
 
@@ -22,14 +22,14 @@ var createAuthorElem = function(authorMap) {
   return $('<li/>').attr("id", "author_" + id).addClass("author").text(name);
 };
 
-var setActiveAuthors = function() {
+var setActiveAuthors = function(opt_sha) {
   $(".author").removeClass("active");
   getAuthors(function setActive(authors) {
     for (var i = 0; i < authors.length; i++) {
       var name = authors[i]['name'];
       $("#author_" + getAuthorId(name)).addClass("active");
     }
-  }, getActiveSha());
+  }, opt_sha);
 };
 
 var getAuthorId = function(name) {
