@@ -89,7 +89,7 @@ sealed class ShowGraph (
       Ok(toJson(Revisions(
         request.getQueryString("rev").filter(_.trim.nonEmpty),
         graph,
-        request.getQueryString("detail").filter(_.trim.nonEmpty).isDefined)))
+        request.getQueryString("details").isDefined)))
     }
   }
 
