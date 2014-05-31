@@ -2,8 +2,9 @@
 AuthorChart = function(elemid, opt_key) {
   var self = this;
   this.elem = $("#" + elemid);
-  this.svg = d3.select("#" + elemid)
+  this.parent = d3.select("#" + elemid)
       .append("svg")
+  this.svg = this.parent
       .append("g");
   this.setKey(opt_key);
 
@@ -18,11 +19,16 @@ AuthorChart = function(elemid, opt_key) {
   this.height = this.elem.height() - $("form", this.elem).outerHeight(true); // padding
   this.radius = Math.min(this.width, this.height) / 2 - 150;
 
+  this.title = this.parent.append("text")
+      .attr("class", "axis")
+      .attr("x", this.width/2)
+      .attr("y", $("form", this.elem).outerHeight(true))
+      .attr("dy","-0.8em")
+      .style("text-anchor","middle");
+
   this.pie = d3.layout.pie()
       .sort(null)
-      .value(function(d) {
-        return d.value;
-      });
+      .value(function(d) { return d.value; });
 
   this.arc = d3.svg.arc()
       .outerRadius(this.radius * 0.8)
@@ -38,13 +44,18 @@ AuthorChart = function(elemid, opt_key) {
 
   this.color = d3.scale.category20();
   d3.selectAll("#" + elemid + " input")
-      .on("change", function() {
-        self.setKey(this.value);
-      });
+      .on("change", function() { self.setKey(this.value); });
 };
 
 AuthorChart.prototype.setObj = function(obj) {
   if (!obj) return;
+  var title = ""
+  if (obj.id) {
+    title = "revision: " + obj.id;
+  } else {
+    title = [obj.kind, obj.name].join(": ")
+  }
+  this.title.text(title);
   this.obj = obj;
   var self = this;
   var keys = d3.keys(this.obj).filter(function(key) { return key.indexOf(self.key) == 0; });
