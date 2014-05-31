@@ -13,10 +13,6 @@
   height: 350px;
 }
 
-rect {
-  fill: #fff;
-}
-
 .axis path,
 .axis line {
   fill: none;

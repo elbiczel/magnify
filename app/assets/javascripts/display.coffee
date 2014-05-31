@@ -141,6 +141,19 @@ $ ->
     .append("svg:svg")
     .attr("width", width)
     .attr("height", height)
+    .attr("pointer-events", "all")
+
+  vis = svg
+    .append("svg:g")
+    .call(d3.behavior.zoom().on("zoom", ->
+      vis.attr("transform", "translate("+d3.event.translate+")"+" scale("+d3.event.scale+")")
+    ))
+    .append('svg:g')
+
+  vis.append('svg:rect')
+    .attr('width', width)
+    .attr('height', height)
+    .attr('fill', 'transparent');
 
   svg
     .append("svg:defs")
@@ -153,8 +166,8 @@ $ ->
           .style("fill","#000")
           .attr("points", "0,0 5,5 0,10 1,5")
 
-  link = svg.selectAll("line.link")
-  node = svg.selectAll("circle.node")
+  link = vis.selectAll("line.link")
+  node = vis.selectAll("circle.node")
 
   force.on "tick", ->
     link
@@ -263,7 +276,7 @@ $ ->
       updateClassPerPackage(cls) for cls in clses
 
       keyFunction = (d) -> [d.kind, d.source.name, d.target.name].join(",")
-      link = svg.selectAll("line.link")
+      link = vis.selectAll("line.link")
         .data(json.edges, keyFunction)
 
       # update
@@ -293,7 +306,7 @@ $ ->
           .style("fill-opacity", 1e-6)
           .remove()
 
-      node = svg.selectAll("circle.node")
+      node = vis.selectAll("circle.node")
         .data(json.nodes, (d) -> d.name)
 
       # update
