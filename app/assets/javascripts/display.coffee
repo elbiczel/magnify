@@ -147,7 +147,7 @@ $ ->
     .append("svg:g")
     .call(d3.behavior.zoom().on("zoom", ->
       vis.attr("transform", "translate("+d3.event.translate+")"+" scale("+d3.event.scale+")")
-    ))
+    )).on("dblclick.zoom", null)
     .append('svg:g')
 
   vis.append('svg:rect')
