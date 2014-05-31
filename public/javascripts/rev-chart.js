@@ -11,7 +11,7 @@ RevChart = function(elemid, options, data) {
 
   this.padding = {
     "top": 40,
-    "right": 80,
+    "right": 10,
     "bottom": 60,
     "left": 70
   };
@@ -56,6 +56,7 @@ RevChart = function(elemid, options, data) {
       .range([this.size.height, 0]);
 
   this.selected = this.data[0];
+  $(self.chart).trigger("revchange", [this.selected.id, this.selected]);
 
   this.line = d3.svg.line()
 //      .interpolate("basis")

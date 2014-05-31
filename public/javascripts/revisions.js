@@ -36,9 +36,8 @@ RevDetails.prototype.setRev = function(rev) {
 
 function drawGraph(revisions) {
   var revDetails = new RevDetails("revDetails");
-  revDetails.setRev(revisions[0]);
-  var chart = new RevChart("revGraph", { key: "metric--loc", label: "Lines of Code" }, revisions);
   $("#revGraph").on("revchange", function(event, sha, rev) {
     revDetails.setRev(rev);
   });
+  var chart = new RevChart("revGraph", { key: "metric--loc", label: "Lines of Code" }, revisions);
 }
