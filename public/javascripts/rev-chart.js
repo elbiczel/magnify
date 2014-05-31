@@ -34,17 +34,25 @@ RevChart = function(elemid, options, data) {
     return key.indexOf("metric--") == 0;
   }));
 
+  var xExtent = d3.extent(data, function(d) { return d.time; });
+  var xDiff = xExtent[1].getTime() - xExtent[0].getTime();
+  xExtent[0] = new Date(xExtent[0].getTime() - 0.01 * xDiff);
+  xExtent[1] = new Date(xExtent[1].getTime() + 0.01 * xDiff);
   // x-scale
   this.x = d3.time.scale()
-      .domain(d3.extent(data, function(d) { return d.time; }))
+      .domain(xExtent)
       .range([0, this.size.width]);
 
   // drag x-axis logic
   this.downx = Math.NaN;
 
+  var yExtent = d3.extent(data, function(d) { return d[self.options.key]; });
+  var yDiff = yExtent[1] - yExtent[0];
+  yExtent[0] = yExtent[0] - 0.03 * yDiff;
+  yExtent[1] = yExtent[1] + 0.03 * yDiff;
   // y-scale (inverted domain)
   this.y = d3.scale.linear()
-      .domain(d3.extent(data, function(d) { return d[self.options.key]; }))
+      .domain(yExtent)
       .range([this.size.height, 0]);
 
   this.selected = this.data[0];
