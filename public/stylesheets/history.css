@@ -34,7 +34,7 @@ circle, .line {
   stroke-width: 2px;
 }
 
-.axis { font-size: 1.5em; }
+.axis { font-size: 0.83em; }
 
 circle {
   fill: white;
