@@ -30,7 +30,7 @@ rect {
 
 circle, .line {
   fill: none;
-  stroke: steelblue;
+  stroke: #4682b4;
   stroke-width: 2px;
 }
 
@@ -42,16 +42,16 @@ circle {
 }
 
 circle.selected {
-  fill: #ff7f0e;
-  stroke: #ff7f0e;
+  fill: #346187;
+  stroke: #b97d4b;
 }
 circle:hover {
-  fill: #ff7f0e;
-  stroke: #707f0e;
+  fill: #008080;
+  stroke: #b97d4b;
 }
 circle.selected:hover {
-  fill: #ff7f0e;
-  stroke: #ff7f0e;
+  fill: #008080;
+  stroke: #008080;
 }
 
 #authors {
