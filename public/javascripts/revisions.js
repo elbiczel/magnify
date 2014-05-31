@@ -2,21 +2,6 @@ var getRevisions = function(callback) {
   $.getJSON("revisions.json?details", callback)
 };
 
-var renderRevisions = function() {
-  getRevisions(function initialCreateRevStructure(revisions) {
-    var $revisions = $('#revisions');
-    for (var i = 0; i < revisions.length; i++) {
-      var classes = [];
-      if (i == 0) {
-        classes.push("active");
-      }
-      var revElem = createRevElement(revisions[i], classes, $revisions);
-      $revisions.append(revElem)
-    }
-    drawGraph(revisions)
-  });
-};
-
 var createRevElement = function(revMap, classes, $revisions) {
   var sha = revMap['id'];
   var author = revMap['author'];
@@ -57,7 +42,7 @@ var createRevElement = function(revMap, classes, $revisions) {
 };
 
 $(function() {
-  renderRevisions();
+  getRevisions(drawGraph);
 });
 
 function drawGraph(revisions) {
