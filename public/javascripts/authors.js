@@ -16,7 +16,7 @@ AuthorChart = function(elemid, opt_key) {
 
   this.width = this.elem.width();
   this.height = this.elem.height() - $("form", this.elem).outerHeight(true); // padding
-  this.radius = Math.min(this.width, this.height) / 2;
+  this.radius = Math.min(this.width, this.height) / 2 - 150;
 
   this.pie = d3.layout.pie()
       .sort(null)
@@ -32,7 +32,7 @@ AuthorChart = function(elemid, opt_key) {
       .innerRadius(this.radius * 0.9)
       .outerRadius(this.radius * 0.9);
 
-  this.svg.attr("transform", "translate("+this.width/2+","+this.height/2+")");
+  this.svg.attr("transform", "translate("+this.width/2+","+(this.radius+30)+")");
 
   this.keyFn = function(d) { return d.data.label; };
 

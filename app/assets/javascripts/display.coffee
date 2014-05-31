@@ -126,7 +126,7 @@ $ ->
   defaultMetrics()
 
   width = $("#chart").width()
-  height = $("#chart").height()
+  height = $(window).height() * 0.8
 
   force = d3.layout.force()
     .charge(-120)

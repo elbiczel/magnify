@@ -43,6 +43,8 @@ circle, .line {
 
 .axis { font-size: 0.83em; }
 
+.labels text { font-size: 0.83em; }
+
 circle {
   fill: white;
   fill-opacity: 0.2;
@@ -61,6 +63,15 @@ circle.selected:hover {
   stroke: #008080;
 }
 
+#chartContainer {
+  width: 100%;
+  height: 100%;
+}
+
 #authors {
-  height: 350px;
+  height: 100%;
+}
+
+#chart {
+  height: 100%;
 }
