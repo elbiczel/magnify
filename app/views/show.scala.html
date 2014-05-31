@@ -9,7 +9,7 @@
 }
 
 @main(name, head, projectName=name) {
-  <ul class="nav nav-tabs nav-graph-detail-level">
+  <ul class="nav nav-tabs nav-graph-detail-level" style="padding-top: 40px">
     <li class="disabled">
       <a href="#">@name</a>
     </li>
@@ -61,8 +61,13 @@
   </ul>
   <div id="revisions" class="row">
     <div id="revGraph" class="col-md-7"></div>
+    <div id="authors" class="col-md-3">
+      <form style="padding-top: 10px">
+        <label><input type="radio" name="metric" value="metric--aggr-cont" checked>Contribution</label>
+        <label><input type="radio" name="metric" value="metric--exp">Experience</label>
+      </form>
+    </div>
     <div id="revDetails" class="col-md-2"></div>
-    <div id="authors" class="col-md-3"></div>
   </div>
   <div id="chart"></div>
 }
