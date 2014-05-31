@@ -47,7 +47,7 @@ RevChart = function(elemid, options, data) {
       .domain(d3.extent(data, function(d) { return d[self.options.key]; }))
       .range([this.size.height, 0]);
 
-  this.selected = null;
+  this.selected = this.data[0];
 
   this.line = d3.svg.line()
 //      .interpolate("basis")
@@ -126,13 +126,13 @@ RevChart.prototype.update = function() {
   var lines = this.vis.select("path").attr("d", this.line(this.data));
 
   var circle = this.vis.select("svg").selectAll("circle")
-      .data(this.data, function(d) { return d; });
+      .data(this.data, function(d) { return d.id; });
 
   circle.enter().append("circle")
       .attr("class", function(d) { return d === self.selected ? "selected" : null; })
       .attr("cx",    function(d, i) { return self.x(self.data[i].time); })
       .attr("cy",    function(d, i) { return self.y(self.data[i][self.options.key]); })
-      .attr("r", 10.0)
+      .attr("r", 3.0)
       .on("mousedown.drag",  self.datapoint_drag())
       .on("touchstart.drag", self.datapoint_drag());
 
@@ -154,6 +154,7 @@ RevChart.prototype.datapoint_drag = function() {
   return function(d) {
     document.onselectstart = function() { return false; };
     self.selected = d;
+    $(self.chart).trigger("revchange");
     self.update();
   }
 };
