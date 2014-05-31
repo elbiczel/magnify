@@ -5,8 +5,8 @@ import scala.collection.JavaConversions._
 import com.google.inject.TypeLiteral
 import com.tinkerpop.blueprints.{Graph => _, _}
 import com.tinkerpop.blueprints.Direction._
-import magnify.features.{MetricNames, Sources}
-import magnify.features.view.{Committers, Revision, Revisions}
+import magnify.features.Sources
+import magnify.features.view.{Committers, ProjectEntity, Revision, Revisions}
 import magnify.model.graph._
 import magnify.modules.inject
 import play.api.libs.json._
@@ -126,17 +126,7 @@ sealed class ShowGraph (
   private def vertexKey(v: Vertex): String = v.getProperty[String]("kind") + ":" + v.getProperty[String]("name")
 
   private def toMap(vertices: Iterable[Vertex]): Seq[Map[String, String]] =
-    for (vertex <- vertices.toSeq) yield {
-      val name = vertex.getProperty("name").toString
-      val kind = vertex.getProperty("kind").toString
-      val pageRank = Option(vertex.getProperty[String](MetricNames.propertyName(MetricNames.pageRank))).getOrElse("")
-      Map("name" -> name, "kind" -> kind, MetricNames.propertyName(MetricNames.pageRank) -> pageRank) ++
-          property(vertex, MetricNames.propertyName(MetricNames.averageLinesOfCode)) ++
-          property(vertex, "parent-pkg-name")
-    }
-
-  private def property(v: Element, name: String): Map[String, String] =
-    Option(v.getProperty(name).asInstanceOf[Object]).map(value => Map(name -> value.toString)).getOrElse(Map())
+    vertices.map(ProjectEntity(_, true)).toSeq
 
   private def toMap(edges: Iterable[Edge], idByVertexName: Map[String, Int]): Seq[Map[String, JsValue]] =
     for {
@@ -152,4 +142,7 @@ sealed class ShowGraph (
 
   private def name(edge: Edge, direction: Direction): String =
     vertexKey(edge.getVertex(direction))
+
+  private def property(v: Element, name: String): Map[String, String] =
+    Option(v.getProperty(name).asInstanceOf[Object]).map(value => Map(name -> value.toString)).getOrElse(Map())
 }

@@ -125,7 +125,8 @@ $ ->
     nodeR = pageRankNodeSize
   defaultMetrics()
 
-  width = $("#chart").width()
+  $chart = $("#chart")
+  width = $chart.width()
   height = $(window).height() * 0.8
 
   force = d3.layout.force()
@@ -212,6 +213,7 @@ $ ->
       if d == selectedNode
         d.selected = false
         selectedNode = null
+        $chart.trigger("objselect", selectedNode)
         linkWidth.withSelected = false
         nodeSize.withSelected = false
         neighbour.neighbour = false for neighbour in force.nodes()
@@ -220,6 +222,7 @@ $ ->
           selectedNode.selected = false
         d.selected = true
         selectedNode = d
+        $chart.trigger("objselect", selectedNode)
         linkWidth.withSelected = true
         nodeSize.withSelected = true
         links = force.links().filter((link) -> link.source == d or link.target == d)
@@ -253,10 +256,12 @@ $ ->
           node.neighbour = old.neighbour
           if (node.selected)
             selectedNode = node
+            $chart.trigger("objselect", selectedNode)
 
       updateNewNode node for node in json.nodes
       if selectedNode and !json.nodes.some((node) -> node.selected)
         selectedNode = null
+        $chart.trigger("objselect", selectedNode)
         node.neighbour = false for node in json.nodes
         linkWidth.withSelected = false
         nodeSize.withSelected = false

@@ -220,7 +220,12 @@ function midAngle(d) {
 
 $(function() {
   var authorChart = new AuthorChart("authors", "metric--aggr-cont");
+  var lastRev = null;
   $("#revGraph").on("revchange", function(event, sha, rev) {
+    lastRev = rev;
     authorChart.setObj(rev);
+  });
+  $("#chart").on("objselect", function(event, obj) {
+    authorChart.setObj(obj || lastRev);
   });
 });
