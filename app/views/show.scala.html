@@ -1,6 +1,7 @@
 @(name: String)(implicit flash: Flash, projects: Projects)
 
 @head = {
+  <script src="@routes.Assets.at("javascripts/rev-chart.js")"></script>
   <script src="@routes.Assets.at("javascripts/revisions.js")"></script>
   <script src="@routes.Assets.at("javascripts/authors.js")"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.8/d3.js"></script>
@@ -63,5 +64,5 @@
   <ul id="authors">
   </ul>
   <div id="revGraph"></div>
-  <div id="chart"></div>
+  <div id="chart" style="display: none;"></div>
 }

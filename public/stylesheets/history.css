@@ -46,6 +46,10 @@
   position: absolute;
 }
 
+rect {
+  fill: #fff;
+}
+
 .axis path,
 .axis line {
   fill: none;
@@ -57,10 +61,30 @@
   display: none;
 }
 
-.line {
+circle, .line {
   fill: none;
   stroke: steelblue;
-  stroke-width: 1.5px;
+  stroke-width: 2px;
+}
+
+.axis { font-size: 1.5em; }
+
+circle {
+  fill: white;
+  fill-opacity: 0.2;
+}
+
+circle.selected {
+  fill: #ff7f0e;
+  stroke: #ff7f0e;
+}
+circle:hover {
+  fill: #ff7f0e;
+  stroke: #707f0e;
+}
+circle.selected:hover {
+  fill: #ff7f0e;
+  stroke: #ff7f0e;
 }
 
 #authors {
