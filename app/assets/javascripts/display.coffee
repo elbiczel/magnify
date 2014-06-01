@@ -1,9 +1,9 @@
 $ ->
+  lastSha = ""
   jsonAddress = (address, opt_sha) ->
     if opt_sha
-      address + "?rev=" + opt_sha
-    else
-      address
+      lastSha = opt_sha
+    address + "?rev=" + (opt_sha || lastSha)
 
   currentCreateFunction = (opt_sha) ->
     makeSvg(jsonAddress("packages.json", opt_sha))
