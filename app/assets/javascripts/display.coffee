@@ -19,13 +19,13 @@ $ ->
   color = null
 
   defaultStrengths =
-    "in-package": () -> 0.5
-    "pkg-imports-pkg": (link) -> if !link.source.expanded and !link.target.expanded then 0.03 else 0
-    "cls-imports-cls": (link) -> if link.source.visible and link.target.visible then 0.01 else 0
-    calls: () -> 0.01
-    "cls-in-pkg": (link) -> if link.target.expanded then 1.0 else 0.0
-    "cls-imports-pkg": (link) -> if link.source.visible and !link.target.expanded then 0.01 else 0
-    "pkg-imports-cls": (link) -> if !link.source.expanded and link.target.visible then 0.01 else 0
+    "in-package": () -> 1
+    "pkg-imports-pkg": () -> 0.1
+    "cls-imports-cls": (link) -> if link.source["parent-pkg-name"] == link.target["parent-pkg-name"] then 0.2 else 0
+    calls: () -> 0
+    "cls-in-pkg": () -> 1
+    "cls-imports-pkg": () -> 0
+    "pkg-imports-cls": () -> 0
   strengths = null
   strength = (link) -> strengths[link.kind](link)
 
@@ -41,7 +41,7 @@ $ ->
   linkColor = (link) -> linkColors[link.kind](link)
 
   defaultLinkWidths =
-    "in-package": (link) -> if !link.source.expanded and !link.target.expanded then 1.5 else 0.5
+    "in-package": (link) -> if !link.source.expanded and !link.target.expanded then 1.5 else 0.1
     "pkg-imports-pkg": (link) ->
       if !link.source.expanded and !link.target.expanded
         Math.min((Math.log(link.weight) / 3) + 1.5, 10)
@@ -60,13 +60,13 @@ $ ->
       0
 
   defaultLinkDistances =
-    "in-package": () -> 30
-    "pkg-imports-pkg": () -> 60
-    "cls-imports-cls": () -> 60
-    calls: () -> 60
-    "cls-in-pkg": () -> 15
-    "cls-imports-pkg": () -> 60
-    "pkg-imports-cls": () -> 60
+    "in-package": () -> 60
+    "pkg-imports-pkg": () -> 360
+    "cls-imports-cls": (link) -> if link.source["parent-pkg-name"] == link.target["parent-pkg-name"] then 10 else 360
+    calls: () -> 360
+    "cls-in-pkg": () -> 10
+    "cls-imports-pkg": () -> 360
+    "pkg-imports-cls": () -> 360
   linkDistances = null
   linkDistance = (link) -> linkDistances[link.kind](link)
 
@@ -122,7 +122,7 @@ $ ->
       "cls-in-pkg": defaultLinkDistances["cls-in-pkg"]
       "cls-imports-pkg": defaultLinkDistances["cls-imports-pkg"]
       "pkg-imports-cls": defaultLinkDistances["pkg-imports-cls"]
-    nodeR = pageRankNodeSize
+    nodeR = kindNodeSize
   defaultMetrics()
 
   $chart = $("#chart")
@@ -130,11 +130,11 @@ $ ->
   height = $(window).height() * 0.8
 
   force = d3.layout.force()
-    .charge(-120)
+    .charge(-60)
     .linkDistance(linkDistance)
     .linkStrength(strength)
     .size([width, height])
-    .gravity(0.2)
+    .gravity(0.1)
     .friction(0.9)
 
   svg = d3
@@ -210,13 +210,13 @@ $ ->
   selectedNode = null
   click = (d) ->
       if d3.event.defaultPrevented then return
+      neighbour.neighbour = false for neighbour in force.nodes()
       if d == selectedNode
         d.selected = false
         selectedNode = null
         $chart.trigger("objselect", selectedNode)
         linkWidth.withSelected = false
         nodeSize.withSelected = false
-        neighbour.neighbour = false for neighbour in force.nodes()
       else
         if selectedNode
           selectedNode.selected = false
@@ -225,8 +225,8 @@ $ ->
         $chart.trigger("objselect", selectedNode)
         linkWidth.withSelected = true
         nodeSize.withSelected = true
-        links = force.links().filter((link) -> link.source == d or link.target == d)
-        neighbours = links.map((link) -> if link.source == d then link.target else link.source)
+        links = force.links().filter((link) -> link.source.name == d.name or link.target.name == d.name)
+        neighbours = links.map((link) -> if link.source.name == d.name then link.target else link.source)
         neighbour.neighbour = true for neighbour in neighbours
       link
         .transition()
