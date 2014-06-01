@@ -29,7 +29,7 @@ private[this] final class Git(repo: Repository, branch: Option[String]) extends 
   val df = new DiffFormatter(DisabledOutputStream.INSTANCE)
   df.setRepository(repo)
   df.setDiffComparator(RawTextComparator.DEFAULT)
-  df.setDetectRenames(false)
+  df.setDetectRenames(true)
 
   override def extract[A: Monoid](f: (Archive, ChangeDescription) => A): A = {
     val walk = new RevWalk(repo)
