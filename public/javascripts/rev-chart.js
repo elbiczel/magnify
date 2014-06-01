@@ -27,12 +27,7 @@ RevChart = function(elemid, options, data) {
     d.time = self.parseDate(d.time);
     d[self.options.key] = +d[self.options.key];
   });
-
-
-  this.color = d3.scale.category10();
-  this.color.domain(d3.keys(this.data[0]).filter(function(key) {
-    return key.indexOf("metric--") == 0;
-  }));
+  this.authorColor = options.authorColor || d3.scale.category20();
 
   var xExtent = d3.extent(data, function(d) { return d.time; });
   var xDiff = xExtent[1].getTime() - xExtent[0].getTime();
@@ -148,7 +143,8 @@ RevChart.prototype.update = function() {
   circle
       .attr("class", function(d) { return d === self.selected ? "selected" : null; })
       .attr("cx",    function(d, i) { return self.x(self.data[i].time); })
-      .attr("cy",    function(d, i) { return self.y(self.data[i][self.options.key]); });
+      .attr("cy",    function(d, i) { return self.y(self.data[i][self.options.key]); })
+      .style("stroke", function(d, i) { return d === self.selected ? "#b97d4b" : self.authorColor(self.data[i].author, i); });
 
   circle.exit().remove();
 

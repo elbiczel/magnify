@@ -1,5 +1,5 @@
 /** Based on: http://bl.ocks.org/dbuezas/9572040 */
-AuthorChart = function(elemid, opt_key) {
+AuthorChart = function(elemid, opt_key, opt_authorColor) {
   var self = this;
   this.duration = 300;
   this.elem = $("#" + elemid);
@@ -43,7 +43,7 @@ AuthorChart = function(elemid, opt_key) {
 
   this.keyFn = function(d) { return d.data.label; };
 
-  this.color = d3.scale.category20();
+  this.color = opt_authorColor || d3.scale.category20();
   d3.selectAll("#" + elemid + " input")
       .on("change", function() { self.setKey(this.value); });
 };
@@ -230,15 +230,3 @@ function mergeWithFirstEqualZero(first, second) {
 function midAngle(d) {
   return d.startAngle + (d.endAngle - d.startAngle) / 2;
 };
-
-$(function() {
-  var authorChart = new AuthorChart("authors", "metric--aggr-cont");
-  var lastRev = null;
-  $("#revGraph").on("revchange", function(event, sha, rev) {
-    lastRev = rev;
-    authorChart.setObj(rev);
-  });
-  $("#chart").on("objselect", function(event, obj) {
-    authorChart.setObj(obj || lastRev);
-  });
-});

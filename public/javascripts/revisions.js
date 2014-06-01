@@ -2,10 +2,6 @@ var getRevisions = function(callback) {
   $.getJSON("revisions.json?details", callback)
 };
 
-$(function() {
-  getRevisions(drawGraph);
-});
-
 RevDetails = function(elemid) {
   this.elem = $("#" + elemid);
   this.shaElem = $('<span/>').addClass("sha");
@@ -33,11 +29,3 @@ RevDetails.prototype.setRev = function(rev) {
   this.descElem.text(desc);
   this.timeElem.text(time);
 };
-
-function drawGraph(revisions) {
-  var revDetails = new RevDetails("revDetails");
-  $("#revGraph").on("revchange", function(event, sha, rev) {
-    revDetails.setRev(rev);
-  });
-  var chart = new RevChart("revGraph", { key: "metric--loc", label: "Lines of Code" }, revisions);
-}

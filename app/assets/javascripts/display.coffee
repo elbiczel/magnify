@@ -1,4 +1,27 @@
+createAuthorChart = (authorColors) ->
+  authorChart = new AuthorChart("authors", "metric--aggr-cont", authorColors);
+  lastRev = null;
+  $("#revGraph").on "revchange", (event, sha, rev) ->
+    lastRev = rev
+    authorChart.setObj(rev)
+  $("#chart").on "objselect", (event, obj) ->
+    authorChart.setObj(obj || lastRev)
+
+createRevChart = (authorColors) ->
+  getRevisions (revisions) ->
+    authorColors.domain(d3.set(d3.keys(revisions[0]).filter (key) -> key.split("---")[1]).values())
+    revDetails = new RevDetails("revDetails");
+    $("#revGraph").on "revchange", (event, sha, rev) ->
+      revDetails.setRev(rev)
+    chart = new RevChart(
+      "revGraph",
+      { key: "metric--loc", label: "Lines of Code", authorColor: authorColors },
+      revisions);
+
 $ ->
+  authorColors = d3.scale.category20();
+  createAuthorChart(authorColors)
+  createRevChart(authorColors)
   lastSha = ""
   jsonAddress = (address, opt_sha) ->
     if opt_sha
@@ -16,6 +39,14 @@ $ ->
   kindNodeColor = (node) -> defaultNodeColor[node.kind](node)
   metricNodeColor = (metric) -> (node) -> badness(node["metric--" + metric])
   avgLocColor = metricNodeColor("avg-loc")
+  authorBasedColor = (node) ->
+    keys = d3.keys(node).filter((key) -> key.indexOf("metric--exp") == 0)
+    authorsContribution = keys.map((key) -> { label: key.split("---")[1], value: +node[key] }).sort (a, b) ->
+      if (a.value > b.value) then 1 else if (a.value == b.value) then 0 else -1
+    if authorsContribution.length
+      authorColors(authorsContribution[authorsContribution.length - 1].label)
+    else
+      "#000"
   color = null
 
   defaultStrengths =
@@ -89,7 +120,7 @@ $ ->
 
 
   defaultMetrics = () ->
-    color = avgLocColor
+    color = authorBasedColor
     strengths =
       "in-package": defaultStrengths["in-package"]
       "pkg-imports-pkg": defaultStrengths["pkg-imports-pkg"]
