@@ -109,6 +109,7 @@ private[features] final class GraphSources(
         ) yield (ParsedFile(ast, stringContent, fileName, oFileId))
         classExtractor.parsedFile(fileName, parsedFiles)
         parsedFiles.filter { (parsedFile) =>
+          // TODO(biczel): Find some better way to handle multimodule projects
           val firstCatalog = parsedFile.ast.className.split("\\.").headOption.map("/" + _).getOrElse(parsedFile.ast.className)
           parsedFile.fileName.startsWith("src/main/java" + firstCatalog) ||
               parsedFile.fileName.startsWith("src" + firstCatalog) ||
