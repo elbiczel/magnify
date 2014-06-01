@@ -68,6 +68,7 @@ AuthorChart.prototype.setObj = function(obj) {
   }).sort(function(a,b) {
     return d3.ascending(a.label, b.label);
   });
+  if (this.data.length == 0) { this.data = [{label: "None", value: 1}]; }
   this.changed_()
 };
 
