@@ -64,12 +64,10 @@ final class FullGraph(
 
   def currentVertices: GremlinPipeline[Vertex, Vertex] = vertices.filter(NoNewVertexFilter)
 
-  private def getPrevCommitVertex(kind: String, name: String, props: Map[String, String]): Option[Vertex] = {
-    val vertex = props
-        .foldLeft[GremlinPipeline[Vertex, Element]](currentVertices.has("kind", kind).has("name", name)
-            .asInstanceOf[GremlinPipeline[Vertex, Element]]) { case (pipe, (prop, propValue)) =>
-              pipe.has(prop, propValue).asInstanceOf[GremlinPipeline[Vertex, Element]]
-            }
+  private def getPrevCommitVertex(kind: String, name: String): Option[Vertex] = {
+    val vertex = currentVertices
+        .has("kind", kind)
+        .has("name", name)
         .transform(new AsVertex)
         .dedup
         .toList
@@ -80,7 +78,7 @@ final class FullGraph(
   }
 
   def addVertex(kind: String, name: String, props: Map[String, String] = Map()): (Vertex, Option[Edge]) = {
-    val oldVertex: Option[Vertex] = getPrevCommitVertex(kind, name, props)
+    val oldVertex: Option[Vertex] = getPrevCommitVertex(kind, name)
     val newVertex = addVertex(kind, name)
     props.keys.foreach((prop) => newVertex.setProperty(prop, props(prop)))
     (newVertex, oldVertex.map(addEdge(_, "commit", newVertex)))

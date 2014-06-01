@@ -108,7 +108,12 @@ private[features] final class GraphSources(
           ast <- parse(fileName, new ByteArrayInputStream(stringContent.getBytes("UTF-8")))
         ) yield (ParsedFile(ast, stringContent, fileName, oFileId))
         classExtractor.parsedFile(fileName, parsedFiles)
-        parsedFiles
+        parsedFiles.filter { (parsedFile) =>
+          val firstCatalog = parsedFile.ast.className.split("\\.").headOption.map("/" + _).getOrElse(parsedFile.ast.className)
+          parsedFile.fileName.startsWith("src/main/java" + firstCatalog) ||
+              parsedFile.fileName.startsWith("src" + firstCatalog) ||
+              parsedFile.fileName.startsWith(firstCatalog)
+        }
       } else {
         Seq()
       }
