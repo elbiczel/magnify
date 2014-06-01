@@ -352,7 +352,7 @@ $ ->
     $(".gauges").remove()
     $(".mag-sidenav").after(
       """
-      <nav class="navbar navbar-default gauges" role="navigation">
+      <nav class="navbar navbar-default gauges" role="navigation" id="customNav">
         <div class="container-fluid">
           <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">

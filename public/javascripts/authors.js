@@ -1,6 +1,7 @@
 /** Based on: http://bl.ocks.org/dbuezas/9572040 */
 AuthorChart = function(elemid, opt_key) {
   var self = this;
+  this.duration = 300;
   this.elem = $("#" + elemid);
   this.parent = d3.select("#" + elemid)
       .append("svg")
@@ -94,7 +95,7 @@ AuthorChart.prototype.renderSliceArcs_ = function(was, is) {
       .data(this.pie(is), this.keyFn);
 
   slice
-      .transition().duration(750)
+      .transition().duration(this.duration)
       .attrTween("d", function(d) {
         var interpolate = d3.interpolate(this._current, d);
         var _this = this;
@@ -108,7 +109,7 @@ AuthorChart.prototype.renderSliceArcs_ = function(was, is) {
       .data(this.pie(this.data), this.keyFn);
 
   slice
-      .exit().transition().delay(750).duration(0)
+      .exit().transition().delay(this.duration).duration(0)
       .remove();
 };
 
@@ -131,7 +132,7 @@ AuthorChart.prototype.renderTextLabels_ = function(was, is) {
   text = this.svg.select(".labels").selectAll("text")
       .data(this.pie(is), this.keyFn);
 
-  text.transition().duration(750)
+  text.transition().duration(this.duration)
       .style("opacity", function(d) {
         return d.data.value == 0 ? 0 : 1;
       })
@@ -158,7 +159,7 @@ AuthorChart.prototype.renderTextLabels_ = function(was, is) {
       .data(this.pie(this.data), this.keyFn);
 
   text
-      .exit().transition().delay(750)
+      .exit().transition().delay(this.duration)
       .remove();
 };
 
@@ -177,7 +178,7 @@ AuthorChart.prototype.renderTextMarkers_ = function(was, is) {
   polyline = this.svg.select(".lines").selectAll("polyline")
       .data(this.pie(is), this.keyFn);
 
-  polyline.transition().duration(750)
+  polyline.transition().duration(this.duration)
       .style("opacity", function(d) {
         return d.data.value == 0 ? 0 : .5;
       })
@@ -198,7 +199,7 @@ AuthorChart.prototype.renderTextMarkers_ = function(was, is) {
       .data(this.pie(this.data), this.keyFn);
 
   polyline
-      .exit().transition().delay(750)
+      .exit().transition().delay(this.duration)
       .remove();
 };
 
