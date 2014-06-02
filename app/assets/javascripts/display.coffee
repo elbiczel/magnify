@@ -220,6 +220,8 @@ $ ->
     cls.visible = expanded for cls in (classesPerPackage[d.name] || [])
 
   dblclick = (d) ->
+    if (d == selectedNode)
+      deselectNode(d)
     if (d.kind == "package")
       if !classesPerPackage[d.name] or !classesPerPackage[d.name].length then return
       setExpanded(d, true)
@@ -239,15 +241,19 @@ $ ->
 
 
   selectedNode = null
+
+  deselectNode = (d) ->
+    d.selected = false
+    selectedNode = null
+    $chart.trigger("objselect", selectedNode)
+    linkWidth.withSelected = false
+    nodeSize.withSelected = false
+
   click = (d) ->
       if d3.event.defaultPrevented then return
       neighbour.neighbour = false for neighbour in force.nodes()
       if d == selectedNode
-        d.selected = false
-        selectedNode = null
-        $chart.trigger("objselect", selectedNode)
-        linkWidth.withSelected = false
-        nodeSize.withSelected = false
+        deselectNode(d)
       else
         if selectedNode
           selectedNode.selected = false
