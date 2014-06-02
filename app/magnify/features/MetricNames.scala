@@ -7,8 +7,9 @@ object MetricNames {
   val contribution: String = "contr"
   val aggregatedContribution: String = "aggr-cont"
   val experience: String = "exp"
-  val mcCabeCyclomaticComplexity: String = "mcCabeCC"
+  val mcCabeCyclomaticComplexity: String = "mccabe-cc"
   val pageRank: String = "pr"
+  val distinctAuthors: String = "dist-auth"
 
   def propertyName(metricName: String) = "metric--" + metricName
 }

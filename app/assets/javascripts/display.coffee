@@ -105,6 +105,13 @@ $ ->
     "package": (node) -> if !node.expanded then 5 else 1e-6
     "class": (node) -> if node.visible then 3 else 0
   kindNodeSize = (node) -> defaultNodeSize[node.kind](node)
+  distinctAuthorsNodeSize = (node) ->
+    if node.kind == "package" and !node.expanded
+      10 + 2 * node["metric--dist-auth"]
+    else if node.kind == "class" and node.visible
+      3 + 2 * node["metric--dist-auth"]
+    else
+      0
   metricNodeSize = (metric) -> (node) ->
     if (node.kind == "package")
       if !node.expanded then 3 + Math.max(3, 100.0 * node["metric--" + metric]) else 1e-6
@@ -153,7 +160,7 @@ $ ->
       "cls-in-pkg": defaultLinkDistances["cls-in-pkg"]
       "cls-imports-pkg": defaultLinkDistances["cls-imports-pkg"]
       "pkg-imports-cls": defaultLinkDistances["pkg-imports-cls"]
-    nodeR = kindNodeSize
+    nodeR = distinctAuthorsNodeSize
   defaultMetrics()
 
   $chart = $("#chart")
