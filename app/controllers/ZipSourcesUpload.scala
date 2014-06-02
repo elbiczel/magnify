@@ -52,7 +52,7 @@ sealed class ZipSourcesUpload (protected override val sources: Sources, implicit
 
   def uploadGit = Action(parse.multipartFormData) { implicit request =>
     for (path <- gitPath; name <- projectName) Future {
-      sources.add(name, Git(path, gitBranch))
+      sources.add(name, Git(path, gitBranch), gitPrefixes)
     }.recover {
       case t: Throwable => {
         logger.error("Error processing project: " + name, t)
@@ -70,6 +70,9 @@ sealed class ZipSourcesUpload (protected override val sources: Sources, implicit
 
   private def gitBranch(implicit request: MultipartRequest): Option[String] =
     getForm("project-git-branch", request)
+
+  private def gitPrefixes(implicit request: MultipartRequest): Set[String] =
+    getForm("project-git-prefixes", request).getOrElse("").split(",").toSet
 
   private def getForm(name: String, request: MultipartRequest) =
     request.body.dataParts.get(name).flatMap {

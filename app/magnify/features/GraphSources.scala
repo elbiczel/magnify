@@ -64,13 +64,13 @@ private[features] final class GraphSources(
     def classes: Set[String] = currentClasses.values.toSet.flatten
   }
 
-  override def add(name: String, vArchive: VersionedArchive) {
+  override def add(name: String, vArchive: VersionedArchive, prefixes: Set[String]) {
     val graph = graphFactory.tinker(vArchive)
     val classExtractor = new ClassExtractor()
     logger.info("Revision analysis starts: " + name + " : " + System.nanoTime())
     vArchive.extract { (archive, diff) =>
       classExtractor.newCommit(diff)
-      val classes = classesFrom(archive, classExtractor)
+      val classes = classesFrom(archive, classExtractor, prefixes)
       if (classes.nonEmpty) {
         processRevision(graph, diff, classes, classExtractor.classes)
         graph.commitVersion(diff, classExtractor.classes)
@@ -100,7 +100,7 @@ private[features] final class GraphSources(
     importedGraphs += name -> graph
   }
 
-  private def classesFrom(file: Archive, classExtractor: ClassExtractor): Seq[ParsedFile] =
+  private def classesFrom(file: Archive, classExtractor: ClassExtractor, prefixes: Set[String]): Seq[ParsedFile] =
     file.extract { (fileName, oFileId, content) =>
       if (isJavaFile(fileName) && classExtractor.shouldParse(fileName) && !isTestFile(fileName)) {
         val stringContent = inputStreamToString(content())
@@ -110,10 +110,16 @@ private[features] final class GraphSources(
         classExtractor.parsedFile(fileName, parsedFiles)
         parsedFiles.filter { (parsedFile) =>
           // TODO(biczel): Find some better way to handle multimodule projects
-          val firstCatalog = parsedFile.ast.className.split("\\.").headOption.map("/" + _).getOrElse(parsedFile.ast.className)
-          parsedFile.fileName.startsWith("src/main/java" + firstCatalog) ||
-              parsedFile.fileName.startsWith("src" + firstCatalog) ||
-              parsedFile.fileName.startsWith(firstCatalog)
+          val firstCatalog = parsedFile.ast.className.split("\\.").headOption
+              .map(_ + "/").getOrElse(parsedFile.ast.className)
+          val baseNames = Set("src/main/java/" + firstCatalog, "src/" + firstCatalog, firstCatalog)
+          val allPrefixes = prefixes + ""
+          val startsWith = for (pref <- allPrefixes; baseName <- baseNames) yield {
+            if (pref == "") baseName else pref + "/" + baseName
+          }
+          startsWith.foldLeft(false) { (acc, pref) =>
+            acc || parsedFile.fileName.startsWith(pref)
+          }
         }
       } else {
         Seq()

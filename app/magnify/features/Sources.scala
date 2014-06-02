@@ -10,7 +10,7 @@ import magnify.model.graph.FullGraph
  */
 trait Sources {
 
-  def add(name: String, archive: VersionedArchive): Unit
+  def add(name: String, archive: VersionedArchive, prefixes: Set[String] = Set()): Unit
 
   def add(name: String, archive: Zip): Unit = this.add(name, new SingleVersionArchive(archive))
 
