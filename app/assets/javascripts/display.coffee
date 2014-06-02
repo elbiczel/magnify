@@ -175,10 +175,22 @@ $ ->
     .attr("height", height)
     .attr("pointer-events", "all")
 
+  scale = 1
+  isTitleDisplayable = (opt_min_scale) -> scale > (opt_min_scale || 3)
+
+  titleDisplay = (d) ->
+    if titleDisplay.withSelected
+      if (d.selected or d.neighbour) and isTitleDisplayable(1.5) then "" else "none"
+    else
+      if isTitleDisplayable() then "" else "none"
+
   vis = svg
     .append("svg:g")
     .call(d3.behavior.zoom().on("zoom", ->
+      scale = d3.event.scale
       vis.attr("transform", "translate("+d3.event.translate+")"+" scale("+d3.event.scale+")")
+      nodeTitle.transition(50)
+        .style("display", titleDisplay)
     )).on("dblclick.zoom", null)
     .append('svg:g')
 
@@ -200,6 +212,7 @@ $ ->
 
   link = vis.selectAll("line.link")
   node = vis.selectAll("circle.node")
+  nodeTitle = node.selectAll("text")
 
   force.on "tick", ->
     link
@@ -210,6 +223,9 @@ $ ->
     node
       .attr("cx", (d) -> d.x)
       .attr("cy", (d) -> d.y)
+    nodeTitle
+      .attr("x", (d) -> d.x)
+      .attr("y", (d) -> d.y)
 
   packages = {}
   classesPerPackage = {}
@@ -237,6 +253,8 @@ $ ->
         .duration(750)
           .style("stroke-width", linkWidth)
           .style("stroke", linkColor)
+    nodeTitle.transition(250)
+      .style("display", titleDisplay)
     force.linkStrength(strength).resume()
 
 
@@ -248,6 +266,9 @@ $ ->
     $chart.trigger("objselect", selectedNode)
     linkWidth.withSelected = false
     nodeSize.withSelected = false
+    titleDisplay.withSelected = false
+    nodeTitle.transition(250)
+      .style("display", titleDisplay)
 
   click = (d) ->
       if d3.event.defaultPrevented then return
@@ -262,6 +283,7 @@ $ ->
         $chart.trigger("objselect", selectedNode)
         linkWidth.withSelected = true
         nodeSize.withSelected = true
+        titleDisplay.withSelected = true
         links = force.links().filter((link) -> link.source.name == d.name or link.target.name == d.name)
         neighbours = links.map((link) -> if link.source.name == d.name then link.target else link.source)
         neighbour.neighbour = true for neighbour in neighbours
@@ -273,6 +295,8 @@ $ ->
         .transition()
           .duration(750)
           .attr("r", nodeSize)
+      nodeTitle.transition(250)
+        .style("display", titleDisplay)
 
 
 
@@ -365,6 +389,16 @@ $ ->
         .call(force.drag)
       enterNode
         .append("title")
+        .text((d) -> d.name)
+      nodeTitle = vis.selectAll("text")
+        .data(json.nodes, (d) -> d.name)
+      nodeTitle.enter()
+        .append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", ".7em")
+        .attr("dx", "3em")
+        .style("font-size", ".35em")
+        .style("display", titleDisplay)
         .text((d) -> d.name)
 
       # enter + update
