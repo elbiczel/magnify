@@ -180,9 +180,12 @@ $ ->
 
   titleDisplay = (d) ->
     if titleDisplay.withSelected
-      if (d.selected or d.neighbour) and isTitleDisplayable(1.5) then "" else "none"
+      if (d.selected or d.neighbour) and isTitleDisplayable(1.5) and ((d.kind == "package" and !d.expanded) or (d.kind == "class" and d.visible)) then "" else "none"
     else
-      if isTitleDisplayable() then "" else "none"
+      if isTitleDisplayable() and ((d.kind == "package" and !d.expanded) or (d.kind == "class" and d.visible))
+        ""
+      else
+        "none"
 
   vis = svg
     .append("svg:g")
