@@ -72,6 +72,7 @@ private[features] final class GraphSources(
       classExtractor.newCommit(diff)
       val classes = classesFrom(archive, classExtractor, prefixes)
       if (classes.nonEmpty) {
+        logger.info("Processing non empty revision: " + diff.revision)
         processRevision(graph, diff, classes, classExtractor.classes)
         graph.commitVersion(diff, classExtractor.classes)
       }
