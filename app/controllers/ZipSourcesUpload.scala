@@ -72,7 +72,7 @@ sealed class ZipSourcesUpload (protected override val sources: Sources, implicit
     getForm("project-git-branch", request)
 
   private def gitPrefixes(implicit request: MultipartRequest): Set[String] =
-    getForm("project-git-prefixes", request).getOrElse("").split(",").toSet
+    getForm("project-git-prefixes", request).getOrElse("").split(",").toSet.map((s: String) => s.trim)
 
   private def getForm(name: String, request: MultipartRequest) =
     request.body.dataParts.get(name).flatMap {
