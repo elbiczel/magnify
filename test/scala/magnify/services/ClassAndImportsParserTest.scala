@@ -1,9 +1,11 @@
 package magnify.services
 
+import java.util
 import java.io.ByteArrayInputStream
 
-import magnify.features.Parser
+import magnify.features.{AstMetric, Parser}
 import magnify.model.Ast
+import magnify.services.imports.AstBuilder
 import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatest.junit.JUnitRunner
@@ -13,7 +15,8 @@ import org.scalatest.junit.JUnitRunner
  */
 @RunWith(classOf[JUnitRunner])
 final class ClassAndImportsParserTest extends FunSuite with Matchers {
-  val parser: Parser = new ClassAndImportsParser()
+  val parser: Parser = new ClassAndImportsParser(
+    new AstBuilder(new AstDependenciesResolvedMetricsProvider(new util.HashSet[AstMetric]())))
 
   test("should parse simple class with no imports yielding fully qualified name") {
     val source =
@@ -113,5 +116,5 @@ final class ClassAndImportsParserTest extends FunSuite with Matchers {
   }
 
   private def parse(source: String): Seq[Ast] =
-    parser(new ByteArrayInputStream(source.getBytes("utf-8")))
+    parser("filename", new ByteArrayInputStream(source.getBytes("utf-8")))
 }
