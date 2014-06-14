@@ -43,7 +43,13 @@ AuthorChart = function(elemid, opt_key, opt_authorColor) {
 
   this.keyFn = function(d) { return d.data.label; };
 
-  this.color = opt_authorColor || d3.scale.category20();
+  var subColor = opt_authorColor || d3.scale.category20();
+  this.color = function(label) {
+    if (label === "None" || label === "Other") {
+      return "#111";
+    }
+    return subColor(label);
+  };
   d3.selectAll("#" + elemid + " input")
       .on("change", function() { self.setKey(this.value); });
 };
@@ -63,12 +69,27 @@ AuthorChart.prototype.setObj = function(obj) {
   this.data = keys.map(function(key) {
     return {
       label: key.split("---")[1],
-      value: self.obj[key]
+      value: +self.obj[key]
     };
   }).sort(function(a,b) {
     return d3.ascending(a.label, b.label);
   });
-  if (this.data.length == 0) { this.data = [{label: "None", value: 1}]; }
+  if (this.data.length == 0) { this.data = [{label: "None", value: 1}]; } else {
+    var sum = d3.sum(this.data, function(o) { return o.value });
+    var threshold = sum * 0.05;
+    var other = 0;
+    this.data = this.data.filter(function(o) {
+      if (o.value < threshold) {
+        other += o.value;
+        return false;
+      }
+      return true;
+    });
+    this.data.push({
+      label: "Other",
+      value: other
+    });
+  }
   this.changed_()
 };
 
