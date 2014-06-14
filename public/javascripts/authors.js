@@ -78,17 +78,22 @@ AuthorChart.prototype.setObj = function(obj) {
     var sum = d3.sum(this.data, function(o) { return o.value });
     var threshold = sum * 0.05;
     var other = 0;
-    this.data = this.data.filter(function(o) {
+    var otherCount = 0;
+    var newData = this.data.filter(function(o) {
       if (o.value < threshold) {
         other += o.value;
+        otherCount++;
         return false;
       }
       return true;
     });
-    this.data.push({
+    newData.push({
       label: "Other",
       value: other
     });
+    if (otherCount > 1) {
+      this.data = newData;
+    }
   }
   this.changed_()
 };
