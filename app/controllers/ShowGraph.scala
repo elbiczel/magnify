@@ -9,6 +9,8 @@ import magnify.features.Sources
 import magnify.features.view.{Committers, ProjectEntity, Revision, Revisions}
 import magnify.model.graph._
 import magnify.modules.inject
+import play.api.http.Writeable
+import play.api.libs.iteratee.Enumerator
 import play.api.libs.json._
 import play.api.libs.json.Json._
 import play.api.libs.json.Writes._
@@ -17,11 +19,13 @@ import play.api.mvc._
 object ShowGraph extends ShowGraph(
     inject[Sources],
     inject[java.util.Map[Class[_ <: GraphView], GraphViewFactory]](
-      new TypeLiteral[java.util.Map[Class[_ <: GraphView], GraphViewFactory]]() {}).toMap)
+      new TypeLiteral[java.util.Map[Class[_ <: GraphView], GraphViewFactory]]() {}).toMap,
+    inject[(FullGraph => Enumerator[String])]("bulkExporter", new TypeLiteral[(FullGraph) => Enumerator[String]]() {}))
 
 sealed class ShowGraph (
     protected override val sources: Sources,
-    graphViewFactories: Map[Class[_ <: GraphView], GraphViewFactory])
+    graphViewFactories: Map[Class[_ <: GraphView], GraphViewFactory],
+    bulkExporter: (FullGraph => Enumerator[String]))
   extends Controller with ProjectList {
 
   def show[A](name: String) = Action { implicit request =>
@@ -97,6 +101,25 @@ sealed class ShowGraph (
     withGraph(name) { graph =>
       Ok(toJson(Revision(request.getQueryString("rev").filter(_.trim.nonEmpty), graph)))
     }
+  }
+
+  def bulk(name: String) = Action { implicit request =>
+    withGraph(name) { graph =>
+      val dataContent = bulkExporter(graph)
+      chunkedAsFile(dataContent, name + ".csv")
+    }
+  }
+
+  def chunkedAsFile[A](content: Enumerator[A], fileName: String)(implicit writeable: Writeable[A]): SimpleResult = {
+    SimpleResult(header = ResponseHeader(play.api.http.Status.OK,
+      Map(
+        CONTENT_TYPE -> play.api.http.ContentTypes.BINARY,
+        TRANSFER_ENCODING -> CHUNKED,
+        CONTENT_DISPOSITION -> """attachment; filename="%s"""".format(fileName)
+      )
+    ),
+      body = content &> writeable.toEnumeratee &> chunk,
+      connection = HttpConnection.KeepAlive)
   }
 
   private def withGraph(name: String)(action: FullGraph => Result)(implicit request: Request[AnyContent]): Result =

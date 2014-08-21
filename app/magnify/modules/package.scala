@@ -1,6 +1,6 @@
 package magnify
 
-import com.google.inject.{TypeLiteral, Guice, Key}
+import com.google.inject.{Guice, Key, TypeLiteral}
 import com.google.inject.name.Names
 import magnify.features.Features
 import magnify.services.Services
@@ -19,4 +19,7 @@ package object modules {
 
   def inject[A](typeLiteral: TypeLiteral[A]): A =
     injector.getInstance(Key.get(typeLiteral))
+
+  def inject[A](name: String, typeLiteral: TypeLiteral[A]): A =
+    injector.getInstance(Key.get(typeLiteral, Names.named(name)))
 }

@@ -6,13 +6,14 @@ import scala.concurrent.ExecutionContext
 
 import com.google.inject.{AbstractModule, TypeLiteral}
 import com.google.inject.name.Names
+import com.tinkerpop.blueprints.Vertex
 import japa.parser.ast.body.TypeDeclaration
 import magnify.common.reflect.constructor
 import magnify.features._
 import magnify.model.graph.{FullGraph, Graph}
 import magnify.services.imports.AstBuilder
 import magnify.services.metrics._
-import com.tinkerpop.blueprints.Vertex
+import play.api.libs.iteratee.Enumerator
 
 /**
  * @author Cezary Bartoszuk (cezarybartoszuk@gmail.com)
@@ -35,5 +36,8 @@ final class Services extends AbstractModule {
         .toConstructor(constructor[RevisionDependenciesResolvedMetricsProvider])
     bind(new TypeLiteral[MetricsProvider[TypeDeclaration, AnyRef, AstMetric]]() {})
         .toConstructor(constructor[AstDependenciesResolvedMetricsProvider])
+    bind(new TypeLiteral[(FullGraph => Enumerator[String])]() {})
+        .annotatedWith(Names.named("bulkExporter"))
+        .toConstructor(constructor[BulkExporter])
   }
 }
