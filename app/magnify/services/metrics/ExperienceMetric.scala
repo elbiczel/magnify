@@ -4,9 +4,9 @@ import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
 import com.google.inject.name.Named
-import com.tinkerpop.blueprints.{Edge, Direction, Vertex}
+import com.tinkerpop.blueprints.{Direction, Edge, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
-import magnify.features.{LoggedFunction, MetricNames, RevisionMetric}
+import magnify.features.{AuthorId, LoggedFunction, MetricNames, RevisionMetric}
 import magnify.model.graph.{AsVertex, FullGraph, Graph}
 import play.api.Logger
 
@@ -71,7 +71,7 @@ private[this] class GetAggregatedExperience(dir: Direction, label: String, kind:
   }
 }
 
-private[this] object ExperienceTransformation extends RevisionTransformation[Map[String, Double]] {
+private[this] object ExperienceTransformation extends RevisionTransformation[Map[String, Double]] with AuthorId {
   override def metric(
       revision: Vertex,
       current: Vertex,

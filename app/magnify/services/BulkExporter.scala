@@ -1,14 +1,12 @@
 package magnify.services
 
-import java.text.SimpleDateFormat
-import java.util.Date
-
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.google.inject.name.Named
 import com.tinkerpop.blueprints.Vertex
 import magnify.features.RevisionGraphFactory
+import magnify.features.view.ElementView
 import magnify.model.graph.{Actions, FullGraph}
 import org.apache.commons.lang3.StringEscapeUtils
 import play.api.libs.iteratee.Enumerator
@@ -17,9 +15,8 @@ class BulkExporter(
     revisionGraphFactory: RevisionGraphFactory,
     @Named("ServicesPool") implicit val pool: ExecutionContext)
   extends (FullGraph => Enumerator[String])
-  with Actions {
-
-  val format = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
+  with Actions
+  with ElementView {
 
   override def apply(graph: FullGraph): Enumerator[String] = {
     val revProvider = RevProvider(graph)
@@ -55,7 +52,7 @@ class BulkExporter(
   }
 
   private object RevRow extends (Vertex => Map[String, String]) {
-    override def apply(rev: Vertex) = revisionValues(rev) ++ Map() // TODO: Add revision metrics
+    override def apply(rev: Vertex) = revisionValues(rev) ++ additionalRevData(rev)
   }
 
   private case class ArtefactRows(graph: FullGraph) extends (Vertex => Seq[Map[String, String]]) {
@@ -71,7 +68,7 @@ class BulkExporter(
 
   def revisionValues(rev: Vertex): Map[String, String] = {
     Map(
-      "revision-timestamp" -> format.format(new Date(rev.getProperty[Integer]("time") * 1000L)),
+      "revision-timestamp" -> timestamp(rev),
       "revision-author" -> getName(rev),
       "revision-id" -> rev.getProperty("rev"),
       "revision-message" -> rev.getProperty("desc")
@@ -81,5 +78,5 @@ class BulkExporter(
   def artefactValues(artefact: Vertex): Map[String, String] = Map(
     "artefact-kind" -> artefact.getProperty("kind"),
     "artefact-name" -> artefact.getProperty("name")
-  ) // TODO: Add metrics, edges
+  ) ++ additionalRevData(artefact) ++ pageRankMap(artefact)
 }

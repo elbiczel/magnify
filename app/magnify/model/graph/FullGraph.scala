@@ -5,11 +5,11 @@ import java.io.{BufferedOutputStream, FileOutputStream}
 
 import scala.collection.JavaConversions._
 
-import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.tinkerpop.blueprints.{Graph => BlueprintsGraph, _}
 import com.tinkerpop.blueprints.util.io.graphml.GraphMLWriter
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import com.tinkerpop.pipes.PipeFunction
+import magnify.features.AuthorId
 import magnify.model.{ChangeDescription, VersionedArchive}
 
 /**
@@ -20,7 +20,8 @@ final class FullGraph(
     archive: VersionedArchive,
     private[this] var headVertex: Vertex)
   extends Graph
-  with Actions {
+  with Actions
+  with AuthorId {
 
   def this(graph: BlueprintsGraph, archive: VersionedArchive) = this(graph, archive, null)
 

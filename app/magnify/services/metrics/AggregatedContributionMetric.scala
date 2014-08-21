@@ -6,7 +6,7 @@ import scala.concurrent.ExecutionContext
 import com.google.inject.name.Named
 import com.tinkerpop.blueprints.{Direction, Edge, Vertex}
 import com.tinkerpop.gremlin.java.GremlinPipeline
-import magnify.features.{LoggedFunction, MetricNames, RevisionMetric}
+import magnify.features.{AuthorId, LoggedFunction, MetricNames, RevisionMetric}
 import magnify.model.graph.{AsVertex, FullGraph, Graph}
 import play.api.Logger
 
@@ -51,7 +51,9 @@ class RevisionAggregatedContributionMetric extends RevisionMetric {
 class LoggedRevisionAggregatedContributionMetric
     extends RevisionAggregatedContributionMetric with LoggedFunction[(Graph, Vertex), Graph]
 
-private[this] object AggregateContributionTransformation extends RevisionTransformation[Map[String, Double]] {
+private[this] object AggregateContributionTransformation
+    extends RevisionTransformation[Map[String, Double]]
+    with AuthorId {
 
   override def metric(
       revision: Vertex, current: Vertex, oParent: Option[Vertex], oCommit: Option[Edge]): Map[String, Double] = {

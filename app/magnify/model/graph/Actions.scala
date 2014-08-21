@@ -8,13 +8,6 @@ import magnify.features.MetricNames
 
 trait Actions {
 
-  final def getName(authorWithTime: String): String = {
-    val endEmailIndex = authorWithTime.lastIndexOf('<')
-    authorWithTime.substring(0, endEmailIndex - 1)
-  }
-
-  final def getName(v: Vertex): String = getName(v.getProperty[String]("author"))
-
   final def getRevisionVertices(pipe: GremlinPipeline[Vertex, Vertex]): GremlinPipeline[Vertex, Vertex] =
     pipe.in("in-revision")
 

@@ -2,15 +2,19 @@ package magnify.features.view
 
 import java.lang
 import java.text.SimpleDateFormat
+import java.util.Date
 
 import com.tinkerpop.blueprints.Vertex
-import magnify.features.MetricNames
+import magnify.features.{AuthorId, MetricNames}
 
-trait ElementView {
+trait ElementView extends AuthorId {
 
-  protected val format = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
+  final protected val format = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
 
-  protected def additionalRevData(vrtx: Vertex): Map[String, String] = {
+  final protected def timestamp(vrtx: Vertex): String =
+    format.format(new Date(vrtx.getProperty[Integer]("time") * 1000L))
+
+  final protected def additionalRevData(vrtx: Vertex): Map[String, String] = {
     val aggregatedContribution = vrtx.getProperty[Map[String, Double]](
       MetricNames.propertyName(MetricNames.aggregatedContribution)).map { case (author, contribution) =>
       (MetricNames.propertyName(MetricNames.aggregatedContribution) + "---" + author -> contribution.toString)
@@ -30,5 +34,10 @@ trait ElementView {
       MetricNames.propertyName(MetricNames.linesOfCode) -> loc.toString,
       MetricNames.propertyName(MetricNames.averageLinesOfCode) -> avgLoc.toString,
       MetricNames.propertyName(MetricNames.distinctAuthors) -> authors.toString)
+  }
+
+  final protected def pageRankMap(vrtx: Vertex): Map[String, String] = {
+    val pageRank = vrtx.getProperty[String](MetricNames.propertyName(MetricNames.pageRank))
+    Map(MetricNames.propertyName(MetricNames.pageRank) -> pageRank)
   }
 }
