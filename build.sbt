@@ -32,7 +32,9 @@ libraryDependencies ++=
     // recorder
     "asm" % "asm-all" % "3.3",
     // git
-    "org.eclipse.jgit" % "org.eclipse.jgit" % "3.3.1.201403241930-r"
+    "org.eclipse.jgit" % "org.eclipse.jgit" % "3.3.1.201403241930-r",
+    // csv
+    "org.apache.commons" % "commons-lang3" % "3.3.2"
   )
 
 scalacOptions ++= Seq("-deprecation", "-unchecked")
