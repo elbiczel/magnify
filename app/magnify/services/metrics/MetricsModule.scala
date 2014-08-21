@@ -15,6 +15,7 @@ private[services] class MetricsModule extends AbstractModule {
     metricsBinder.addBinding().toConstructor(constructor[LoggedMcCabeCyclomaticComplexityMetric])
     metricsBinder.addBinding().toConstructor(constructor[CommitLocMetric])
     metricsBinder.addBinding().toConstructor(constructor[DistinctAuthorsMetric])
+    metricsBinder.addBinding().toConstructor(constructor[LoggedOwnerMetric])
     val pkgMetricsBinder = Multibinder.newSetBinder(binder(), classOf[RevisionMetric])
     pkgMetricsBinder.addBinding().toConstructor(constructor[LoggedRevisionLocMetric])
     pkgMetricsBinder.addBinding().toConstructor(constructor[LoggedRevisionAvgLocMetric])
@@ -25,6 +26,7 @@ private[services] class MetricsModule extends AbstractModule {
     pkgMetricsBinder.addBinding().toConstructor(constructor[DummyRevisionLocMetric])
     pkgMetricsBinder.addBinding().toConstructor(constructor[DummyRevisionPageRankMetric])
     pkgMetricsBinder.addBinding().toConstructor(constructor[PackageDistinctAuthorsMetric])
+    pkgMetricsBinder.addBinding().toConstructor(constructor[LoggedRevisionOwnerMetric])
     val astMetricsBinder = Multibinder.newSetBinder(binder(), classOf[AstMetric])
     astMetricsBinder.addBinding().toConstructor(constructor[ClassMcCabeCyclomaticComplexityMetric])
   }

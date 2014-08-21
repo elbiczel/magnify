@@ -40,11 +40,9 @@ $ ->
   metricNodeColor = (metric) -> (node) -> badness(node["metric--" + metric])
   avgLocColor = metricNodeColor("avg-loc")
   authorBasedColor = (node) ->
-    keys = d3.keys(node).filter((key) -> key.indexOf("metric--exp") == 0)
-    authorsContribution = keys.map((key) -> { label: key.split("---")[1], value: +node[key] }).sort (a, b) ->
-      if (a.value > b.value) then 1 else if (a.value == b.value) then 0 else -1
-    if authorsContribution.length
-      authorColors(authorsContribution[authorsContribution.length - 1].label)
+    owner = node["metric--owner"]
+    if owner
+      authorColors(owner)
     else
       "#000"
   color = null

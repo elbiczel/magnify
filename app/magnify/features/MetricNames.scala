@@ -10,6 +10,7 @@ object MetricNames {
   val mcCabeCyclomaticComplexity: String = "mccabe-cc"
   val pageRank: String = "pr"
   val distinctAuthors: String = "dist-auth"
+  def owner: String = "owner"
 
   def propertyName(metricName: String) = "metric--" + metricName
 }

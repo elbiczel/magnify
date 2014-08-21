@@ -5,9 +5,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import com.tinkerpop.blueprints.Vertex
-import magnify.features.{AuthorId, MetricNames}
+import magnify.features.AuthorId
 
 trait ElementView extends AuthorId {
+
+  import magnify.features.MetricNames._
 
   final protected val format = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
 
@@ -15,29 +17,31 @@ trait ElementView extends AuthorId {
     format.format(new Date(vrtx.getProperty[Integer]("time") * 1000L))
 
   final protected def additionalRevData(vrtx: Vertex): Map[String, String] = {
-    val aggregatedContribution = vrtx.getProperty[Map[String, Double]](
-      MetricNames.propertyName(MetricNames.aggregatedContribution)).map { case (author, contribution) =>
-      (MetricNames.propertyName(MetricNames.aggregatedContribution) + "---" + author -> contribution.toString)
+    val aggregatedContributionValues = vrtx.getProperty[Map[String, Double]](
+      propertyName(aggregatedContribution)).map { case (author, contribution) =>
+      (propertyName(aggregatedContribution) + "---" + author -> contribution.toString)
     }
-    val experience = vrtx.getProperty[Map[String, Double]](MetricNames.propertyName(MetricNames.experience))
+    val experienceValues = vrtx.getProperty[Map[String, Double]](propertyName(experience))
         .map { case (author, exp) =>
-      (MetricNames.propertyName(MetricNames.experience) + "---" + author -> exp.toString)
+      (propertyName(experience) + "---" + author -> exp.toString)
     }
-    val contribution = vrtx.getProperty[Double](MetricNames.propertyName(MetricNames.contribution))
-    val complexity = vrtx.getProperty[Double](MetricNames.propertyName(MetricNames.mcCabeCyclomaticComplexity))
-    val loc = vrtx.getProperty[Double](MetricNames.propertyName(MetricNames.linesOfCode))
-    val avgLoc = vrtx.getProperty[Double](MetricNames.propertyName(MetricNames.averageLinesOfCode))
-    val authors = vrtx.getProperty[lang.Integer](MetricNames.propertyName(MetricNames.distinctAuthors))
-    aggregatedContribution ++ experience ++ Map(
-      MetricNames.propertyName(MetricNames.contribution) -> contribution.toString,
-      MetricNames.propertyName(MetricNames.mcCabeCyclomaticComplexity) -> complexity.toString,
-      MetricNames.propertyName(MetricNames.linesOfCode) -> loc.toString,
-      MetricNames.propertyName(MetricNames.averageLinesOfCode) -> avgLoc.toString,
-      MetricNames.propertyName(MetricNames.distinctAuthors) -> authors.toString)
+    val contributionValue = vrtx.getProperty[Double](propertyName(contribution))
+    val complexityValue = vrtx.getProperty[Double](propertyName(mcCabeCyclomaticComplexity))
+    val locValue = vrtx.getProperty[Double](propertyName(linesOfCode))
+    val avgLocValue = vrtx.getProperty[Double](propertyName(averageLinesOfCode))
+    val authorsValue = vrtx.getProperty[lang.Integer](propertyName(distinctAuthors))
+    val ownerValue = vrtx.getProperty[String](propertyName(owner))
+    aggregatedContributionValues ++ experienceValues ++ Map(
+      propertyName(contribution) -> contributionValue.toString,
+      propertyName(mcCabeCyclomaticComplexity) -> complexityValue.toString,
+      propertyName(linesOfCode) -> locValue.toString,
+      propertyName(averageLinesOfCode) -> avgLocValue.toString,
+      propertyName(distinctAuthors) -> authorsValue.toString,
+      propertyName(owner) -> ownerValue.toString)
   }
 
   final protected def pageRankMap(vrtx: Vertex): Map[String, String] = {
-    val pageRank = vrtx.getProperty[String](MetricNames.propertyName(MetricNames.pageRank))
-    Map(MetricNames.propertyName(MetricNames.pageRank) -> pageRank)
+    val pageRankValue = vrtx.getProperty[String](propertyName(pageRank))
+    Map(propertyName(pageRank) -> pageRankValue)
   }
 }
