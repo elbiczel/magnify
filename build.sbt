@@ -4,7 +4,7 @@ name := "magnify"
 
 version := "0.2.0-SNAPSHOT"
 
-scalaVersion := "2.11"
+scalaVersion := "2.11.2"
 
 libraryDependencies ++=
   Seq(
