@@ -457,14 +457,18 @@ $ ->
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Node size<b class="caret"></b></a>
                 <ul class="dropdown-menu">
                   <li><label class="radio"><input type="radio" name="node-size" value="constant" checked="checked"/>Constant</label></li>
-                  <li><label class="radio"><input type="radio" name="node-size" value="page-rank"/>Page rank</label></li>
+                  <li><label class="radio"><input type="radio" name="node-size" value="type"/>Type</label></li>
+                  <li><label class="radio"><input type="radio" name="node-size" value="page-rank"/>Page rank [importance]</label></li>
+                  <li><label class="radio"><input type="radio" name="node-size" value="dist-auth"/>Contributors</label></li>
                 </ul>
               </li>
               <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Node colour<b class="caret"></b></a>
                 <ul class="dropdown-menu">
                   <li><label class="radio"><input type="radio" name="node-color" value="black" checked="checked"/>Black</label></li>
-                  <li><label class="radio"><input type="radio" name="node-color" value="by-avg-loc"/>Avg. lines of code / class</label></li>
+                  <li><label class="radio"><input type="radio" name="node-color" value="type" checked="checked"/>Type</label></li>
+                  <li><label class="radio"><input type="radio" name="node-color" value="by-avg-loc"/>Avg. lines of code / class [quality]</label></li>
+                  <li><label class="radio"><input type="radio" name="node-color" value="author" checked="checked"/>Owner</label></li>
                 </ul>
               </li>
             </ul>

@@ -69,6 +69,11 @@ circle.selected:hover {
 }
 
 #authors {
+  height: 1000px;
+}
+
+#authors svg {
+  width: 100%;
   height: 100%;
 }
 
