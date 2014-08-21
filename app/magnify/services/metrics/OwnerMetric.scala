@@ -6,11 +6,7 @@ import magnify.features.{FullGraphMetric, LoggedFunction, MetricNames, RevisionM
 import magnify.model.graph.{Actions, AsVertex, FullGraph, Graph}
 import play.api.Logger
 
-/**
- *     keys = d3.keys(node).filter((key) -> key.indexOf("metric--exp") == 0)
-    authorsContribution = keys.map((key) -> { label: key.split("---")[1], value: +node[key] }).sort (a, b) ->
-      if (a.value > b.value) then 1 else if (a.value == b.value) then 0 else -1
- */
+
 abstract class OwnerMetric extends FullGraphMetric {
 
   val logger = Logger(classOf[OwnerMetric].getSimpleName)
