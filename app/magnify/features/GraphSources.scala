@@ -81,7 +81,6 @@ private[features] final class GraphSources(
       Seq() // for monoid to work
     }
     logger.info("Revision analysis finished: " + name + " : " + System.nanoTime())
-    graph.save(graphsDir + "withoutMetrics_" + name + ".gml")
     logger.info("Metrics analysis starts: " + name + " : " + System.nanoTime())
     val graphWithMetrics = metrics().foldLeft(graph) { case (graph, metric) =>
       metric(graph)
@@ -114,7 +113,6 @@ private[features] final class GraphSources(
         ) yield (ParsedFile(ast, stringContent, fileName, oFileId))
         classExtractor.parsedFile(fileName, parsedFiles)
         parsedFiles.filter { (parsedFile) =>
-          // TODO(biczel): Find some better way to handle multimodule projects
           val firstCatalog = parsedFile.ast.className.split("\\.").headOption
               .map(_ + "/").getOrElse(parsedFile.ast.className)
           val baseNames = Set("src/main/java/" + firstCatalog, "src/" + firstCatalog, firstCatalog)
