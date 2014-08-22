@@ -20,8 +20,6 @@ abstract class OwnerMetric extends FullGraphMetric {
   override final val name: String = GetOwner.name
 
   override final val dependencies: Set[String] = Set(GetOwner.dependency)
-
-  override val isSerializable: Boolean = false // TODO: true - after regeneration of test data
 }
 
 class LoggedOwnerMetric extends OwnerMetric with LoggedFunction[FullGraph, FullGraph]
@@ -38,8 +36,6 @@ abstract class RevisionOwnerMetric extends RevisionMetric {
   override final val name: String = GetOwner.name
 
   override final val dependencies: Set[String] = Set(GetOwner.dependency)
-
-  override val isSerializable: Boolean = false // TODO: true - after regeneration of test data
 }
 
 class LoggedRevisionOwnerMetric extends RevisionOwnerMetric with LoggedFunction[(Graph, Vertex), Graph]

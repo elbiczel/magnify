@@ -75,10 +75,13 @@ private[features] final class GraphSources(
         logger.info("Processing non empty revision: " + diff.revision)
         processRevision(graph, diff, classes, classExtractor.classes)
         graph.commitVersion(diff, classExtractor.classes)
+      } else {
+        logger.info("Processing empty revision: " + diff.revision)
       }
       Seq() // for monoid to work
     }
     logger.info("Revision analysis finished: " + name + " : " + System.nanoTime())
+    graph.save(graphsDir + "withoutMetrics_" + name + ".gml")
     logger.info("Metrics analysis starts: " + name + " : " + System.nanoTime())
     val graphWithMetrics = metrics().foldLeft(graph) { case (graph, metric) =>
       metric(graph)
@@ -103,7 +106,8 @@ private[features] final class GraphSources(
 
   private def classesFrom(file: Archive, classExtractor: ClassExtractor, prefixes: Set[String]): Seq[ParsedFile] =
     file.extract { (fileName, oFileId, content) =>
-      if (isJavaFile(fileName) && classExtractor.shouldParse(fileName) && !isTestFile(fileName)) {
+      if (isInPrefixes(prefixes, fileName) && isJavaFile(fileName) && classExtractor.shouldParse(fileName) &&
+          !isTestFile(fileName)) {
         val stringContent = inputStreamToString(content())
         val parsedFiles = for (
           ast <- parse(fileName, new ByteArrayInputStream(stringContent.getBytes("UTF-8")))
@@ -114,7 +118,7 @@ private[features] final class GraphSources(
           val firstCatalog = parsedFile.ast.className.split("\\.").headOption
               .map(_ + "/").getOrElse(parsedFile.ast.className)
           val baseNames = Set("src/main/java/" + firstCatalog, "src/" + firstCatalog, firstCatalog)
-          val allPrefixes = prefixes + ""
+          val allPrefixes = if (prefixes.isEmpty) Set("") else prefixes
           val startsWith = for (pref <- allPrefixes; baseName <- baseNames) yield {
             if (pref == "") baseName else pref + "/" + baseName
           }
@@ -125,6 +129,14 @@ private[features] final class GraphSources(
       } else {
         Seq()
       }
+  }
+
+  private def isInPrefixes(prefixes: Set[String], fileName: String): Boolean = {
+    if (prefixes.isEmpty) true else {
+      prefixes.foldLeft(false) { (acc, pref) =>
+        acc || fileName.startsWith(pref + "/")
+      }
+    }
   }
 
   private def isTestFile(fileName: String): Boolean = {
